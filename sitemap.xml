@@ -8,7 +8,9 @@
 <url> <loc>https://scalameta.org/mdoc/mdoc/docs/demo.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/demo.html" /> </url>
 <url> <loc>https://scalameta.org/mdoc/mdoc/docs/docusaurus.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/docusaurus.html" /> </url>
 <url> <loc>https://scalameta.org/mdoc/mdoc/docs/installation.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/installation.html" /> </url>
+<url> <loc>https://scalameta.org/mdoc/mdoc/docs/js.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/js.html" /> </url>
 <url> <loc>https://scalameta.org/mdoc/mdoc/docs/modifiers.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/modifiers.html" /> </url>
+<url> <loc>https://scalameta.org/mdoc/mdoc/docs/readme.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/readme.html" /> </url>
 <url> <loc>https://scalameta.org/mdoc/mdoc/docs/tut.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/tut.html" /> </url>
 <url> <loc>https://scalameta.org/mdoc/mdoc/docs/why.html</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://scalameta.org/mdoc/mdoc/docs/why.html" /> </url>
 </urlset>

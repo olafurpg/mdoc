@@ -25,6 +25,7 @@ sealed abstract class Modifier(mods: Set[Mod]) {
   def isSilent: Boolean = mods(Silent)
   def isInvisible: Boolean = mods(Invisible)
   def isReset: Boolean = mods(Reset)
+  def isNest: Boolean = mods(Nest)
 }
 object Modifier {
   object Default {
@@ -40,7 +41,7 @@ object Modifier {
   }
   object PrintVariable {
     def unapply(m: Modifier): Boolean =
-      m.isDefault || m.isPassthrough || m.isReset
+      m.isDefault || m.isPassthrough || m.isReset || m.isNest
   }
 
   def apply(string: String): Option[Modifier] = {

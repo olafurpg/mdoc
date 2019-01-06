@@ -8,6 +8,7 @@ object Mod {
   case object Passthrough extends Mod
   case object Invisible extends Mod
   case object Reset extends Mod
+  case object Nest extends Mod
 
   def all: List[Mod] = List(
     Passthrough,
@@ -15,7 +16,8 @@ object Mod {
     Reset,
     Fail,
     Crash,
-    Silent
+    Silent,
+    Nest
   )
   def unapply(string: String): Option[Mod] = {
     all.find(_.toString.equalsIgnoreCase(string))

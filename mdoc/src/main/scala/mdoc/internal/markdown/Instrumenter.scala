@@ -14,6 +14,7 @@ class Instrumenter(sections: List[SectionInput]) {
   }
   private val out = new ByteArrayOutputStream()
   private val sb = new PrintStream(out)
+  private var lastNest = ""
   val gensym = new Gensym()
   private def printAsScript(): Unit = {
     sections.zipWithIndex.foreach {
@@ -21,6 +22,10 @@ class Instrumenter(sections: List[SectionInput]) {
         if (section.mod.isReset) {
           val nextApp = gensym.fresh("App")
           sb.print(s"$nextApp\n}\nobject $nextApp {\n")
+        }
+        if (section.mod.isNest) {
+          lastNest = gensym.fresh("nest")
+          sb.print(s"$lastNest\nobject $lastNest {\n")
         }
         sb.println("\n$doc.startSection();")
         if (section.mod.isFail) {
@@ -45,6 +50,9 @@ class Instrumenter(sections: List[SectionInput]) {
           }
         }
         sb.println("$doc.endSection();")
+        if (section.mod.isNest) {
+          sb.print(s"\n}\nimport $lastNest._;\n")
+        }
     }
   }
 
@@ -52,7 +60,8 @@ class Instrumenter(sections: List[SectionInput]) {
     sb.print(s"; $$doc.binder($name, ${position(pos)})")
   }
   private def printStatement(stat: Stat, m: Modifier, sb: PrintStream): Unit = {
-    if (m.isDefault || m.isPassthrough || m.isInvisible || m.isSilent || m.isReset || m.isPost) {
+    if (m.isDefault || m.isPassthrough || m.isInvisible ||
+      m.isSilent || m.isReset || m.isPost || m.isNest) {
       val binders = stat match {
         case Binders(names) =>
           names.map(name => name -> name.pos)
@@ -73,7 +82,7 @@ class Instrumenter(sections: List[SectionInput]) {
         .append(stat.pos.text)
         .append("\n}")
     } else {
-      throw new IllegalArgumentException(stat.pos.text)
+      throw new IllegalArgumentException(m.toString)
     }
   }
 }

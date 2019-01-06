@@ -186,7 +186,7 @@ class MdocPostProcessor(implicit ctx: Context) extends DocumentPostProcessor {
               replaceNodeWithText(doc, block, stacktrace)
             } else if (m.isSilent) {
               () // Do nothing
-            } else if (m.isDefault || m.isReset || m.isFail) {
+            } else if (m.isDefault || m.isReset || m.isFail || m.isNest) {
               block.setContent(List[BasedSequence](CharSubSequence.of(defaultRender)).asJava)
             } else {
               throw new IllegalArgumentException(m.toString)

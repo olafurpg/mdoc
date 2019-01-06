@@ -106,7 +106,8 @@ lazy val unit = project
   .settings(
     skip in publish := true,
     scalacOptions ++= List(
-      "-deprecation"
+      "-deprecation",
+      "-Ydelambdafy:inline"
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
     resolvers += Resolver.bintrayRepo("cibotech", "public"),

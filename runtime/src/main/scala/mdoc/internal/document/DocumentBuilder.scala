@@ -6,6 +6,7 @@ import mdoc.document._
 import pprint.TPrint
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import sourcecode.Text
 
@@ -37,11 +38,18 @@ trait DocumentBuilder {
       e.value
     }
 
+    def initialize[T](implicit ev: ClassTag[T]): Unit = {
+      val ctor = ev.runtimeClass.getDeclaredConstructor()
+      ctor.setAccessible(true)
+      ctor.newInstance()
+    }
+
     def startStatement(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int): Unit = {
       statementPosition = position(startLine, startColumn, endLine, endColumn)
       myBinders.clear()
       myOut.reset()
     }
+
     def endStatement(): Unit = {
       val out = myOut.toString()
       myStatements.append(Statement(myBinders.toList, out, statementPosition))

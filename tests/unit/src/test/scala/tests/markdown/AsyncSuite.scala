@@ -41,4 +41,36 @@ class AsyncSuite extends BaseMarkdownSuite {
        |	... 1 more
     """.stripMargin
   )
+
+  check(
+    "nest",
+    """|
+       |```scala mdoc
+       |import scala.concurrent._, duration._, ExecutionContext.Implicits.global
+       |def y = 2
+       |```
+       |
+       |```scala mdoc:nest
+       |val b = 3
+       |```
+       |
+       |```scala mdoc
+       |Await.result(Future(b), 100.millis)
+       |```
+    """.stripMargin,
+    """|```scala
+       |import scala.concurrent._, duration._, ExecutionContext.Implicits.global
+       |```
+       |
+       |```scala
+       |val b = 3
+       |// b: Int = 3
+       |```
+       |
+       |```scala
+       |Await.result(Future(b), 100.millis)
+       |// res1: Int = 3
+       |```
+    """.stripMargin
+  )
 }

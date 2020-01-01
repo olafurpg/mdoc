@@ -13,9 +13,12 @@ import scala.meta.io.RelativePath
 import mdoc.internal.pos.PositionSyntax._
 import scala.meta.inputs.Position
 
-trait PreModifier {
+trait PreModifier extends LifecycleModifier {
   val name: String
+
+  @deprecatedOverriding("override onStart instead", "2.1.1")
   def onLoad(ctx: OnLoadContext): Unit = ()
+
   def process(ctx: PreModifierContext): String
   def postProcess(ctx: PostProcessContext): String = ""
 }
@@ -29,41 +32,4 @@ object PreModifier {
     ConfDecoder.instanceF[PreModifier](_ => ConfError.message("unsupported").notOk)
   implicit val encoder: ConfEncoder[PreModifier] =
     ConfEncoder.StringEncoder.contramap(mod => s"<${mod.name}>")
-}
-
-final class OnLoadContext private[mdoc] (
-    val reporter: Reporter,
-    private[mdoc] val settings: Settings
-) {
-  def site: Map[String, String] = settings.site
-}
-
-final class PostProcessContext private[mdoc] (
-    val reporter: Reporter,
-    val relativePath: RelativePath,
-    private[mdoc] val settings: Settings
-) {
-  def inputFile: AbsolutePath = inDirectory.resolve(relativePath)
-  def outputFile: AbsolutePath = outDirectory.resolve(relativePath)
-  def inDirectory: AbsolutePath = settings.in
-  def outDirectory: AbsolutePath = settings.out
-}
-
-final class PreModifierContext private[mdoc] (
-    val info: String,
-    val originalCode: Input,
-    val reporter: Reporter,
-    val relativePath: RelativePath,
-    private[mdoc] val settings: Settings
-) {
-  def infoInput: Input = {
-    val cpos = originalCode.toPosition.toUnslicedPosition
-    val start = cpos.start - info.length - 1
-    val end = cpos.start - 1
-    Input.Slice(cpos.input, start, end)
-  }
-  def inputFile: AbsolutePath = inDirectory.resolve(relativePath)
-  def outputFile: AbsolutePath = outDirectory.resolve(relativePath)
-  def inDirectory: AbsolutePath = settings.in
-  def outDirectory: AbsolutePath = settings.out
 }

@@ -29,6 +29,11 @@ import mdoc.StringModifier
 import mdoc.Variable
 import mdoc.Reporter
 import mdoc.internal.markdown.{GitHubIdGenerator, MarkdownCompiler, ReplVariablePrinter}
+import mdoc.OnStartContext
+import mdoc.LifecycleModifier
+import mdoc.OnExitContext
+import scala.util.control.NonFatal
+import mdoc.internal.markdown.ModifierException
 
 class Section(val name: String) extends StaticAnnotation
 
@@ -143,6 +148,30 @@ case class Settings(
     variablePrinter: Variable => String = ReplVariablePrinter
 ) {
 
+  val allModifiers: List[LifecycleModifier] = preModifiers ++ postModifiers
+
+  private def foreachModifier(
+      doingWhat: String,
+      reporter: Reporter,
+      fn: LifecycleModifier => Unit
+  ): Unit = {
+    allModifiers.foreach { mod =>
+      try fn(mod)
+      catch {
+        case NonFatal(e) =>
+          reporter.error(ModifierException())
+      }
+    }
+
+  }
+
+  def onStart(ctx: OnStartContext): Unit = {
+    allModifiers.foreach(_.onStart(ctx))
+  }
+  def onExit(ctx: OnExitContext): Unit = {
+    allModifiers.foreach(_.onExit(ctx))
+  }
+
   val isMarkdownFileExtension = markdownExtensions.toSet
 
   def withProperties(props: MdocProperties): Settings =
@@ -175,17 +204,12 @@ case class Settings(
     !isExplicitlyExcluded(path)
   }
 
-  def onLoad(reporter: Reporter): Unit = {
-    val ctx = new OnLoadContext(reporter, this)
-    preModifiers.foreach(_.onLoad(ctx))
-  }
   def validate(logger: Reporter): Configured[Context] = {
     if (Files.exists(in.toNIO)) {
       if (out.toNIO.startsWith(in.toNIO)) {
         Configured.error(Feedback.outSubdirectoryOfIn(in.toNIO, out.toNIO))
       } else {
         val compiler = MarkdownCompiler.fromClasspath(classpath, scalacOptions)
-        onLoad(logger)
         if (logger.hasErrors) {
           Configured.error("Failed to load modifiers")
         } else {

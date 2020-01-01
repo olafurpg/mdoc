@@ -6,8 +6,7 @@ inThisBuild(
     scalaVersion := scala212,
     crossScalaVersions := List(scala212, scala211, scala213),
     scalacOptions ++= List(
-      "-Xexperimental",
-      "-deprecation"
+      "-Xexperimental"
     ),
     organization := "org.scalameta",
     licenses := Seq(

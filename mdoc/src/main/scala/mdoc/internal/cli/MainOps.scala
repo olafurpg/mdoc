@@ -24,6 +24,9 @@ import scala.meta.internal.io.FileIO
 import scala.meta.internal.io.PathIO
 import scala.meta.io.AbsolutePath
 import scala.util.control.NonFatal
+import mdoc.OnExitContext
+import mdoc.OnStartContext
+import mdoc.OnLoadContext
 
 final class MainOps(
     context: Context
@@ -231,11 +234,14 @@ object MainOps {
             if (ctx.settings.verbose) {
               ctx.reporter.setDebugEnabled(true)
             }
-            ctx.settings.postModifiers.foreach(_.onStart(settings.get))
+            val onLoad = new OnLoadContext(ctx.reporter, ctx.settings)
+            val onStart = new OnStartContext(ctx.reporter, ctx.settings)
+            ctx.settings.preModifiers.foreach(_.onLoad(onLoad))
+            ctx.settings.allModifiers.foreach(_.onStart(onStart))
             val runner = new MainOps(ctx)
             val exit = runner.run()
-            val exitCode = new mdoc.MainExit(exit)
-            ctx.settings.postModifiers.foreach(_.onExit(exitCode))
+            val onExit = new OnExitContext(ctx.reporter, new mdoc.MainExit(exit), ctx.settings)
+            ctx.settings.allModifiers.foreach(_.onExit(onExit))
             if (exit.isSuccess) {
               0
             } else {

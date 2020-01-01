@@ -43,7 +43,7 @@ class LifeCycleModifier extends PostModifier {
     * This is called once when the [[mdoc.Main]] process starts
     * @param settings CLI or API settings used by mdoc
     */
-  override def onStart(settings: MainSettings): Unit = {
+  override def onStart(ctx: OnStartContext): Unit = {
     numberOfStarts += 1
     LifeCycleCounter.numberOfStarts.get().incrementAndGet()
   }
@@ -52,7 +52,7 @@ class LifeCycleModifier extends PostModifier {
     * This is called once when the [[mdoc.Main]] process finishes
     * @param exit is the exit code returned by mdoc's processing
     */
-  override def onExit(exit: MainExit): Unit = {
+  override def onExit(ctx: OnExitContext): Unit = {
     numberOfExists += 1
     LifeCycleCounter.numberOfStarts.get().decrementAndGet()
   }

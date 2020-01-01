@@ -3,9 +3,7 @@ package mdoc.docs
 import com.cibo.evilplot.geometry.Drawable
 import java.nio.file.Files
 import java.nio.file.Paths
-
 import mdoc._
-
 import scala.meta.inputs.Position
 
 class EvilplotModifier extends PostModifier {
@@ -38,8 +36,4 @@ class EvilplotModifier extends PostModifier {
         ""
     }
   }
-
-  override def onStart(settings: MainSettings): Unit = ()
-
-  override def onExit(exit: Exit): Unit = ()
 }

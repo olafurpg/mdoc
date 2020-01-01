@@ -234,7 +234,7 @@ object MainOps {
             ctx.settings.postModifiers.foreach(_.onStart(settings.get))
             val runner = new MainOps(ctx)
             val exit = runner.run()
-            val exitCode = mdoc.Exit(exit)
+            val exitCode = new mdoc.MainExit(exit)
             ctx.settings.postModifiers.foreach(_.onExit(exitCode))
             if (exit.isSuccess) {
               0

@@ -2,8 +2,7 @@ package tests.markdown
 
 import com.cibo.evilplot.geometry.Drawable
 import java.nio.file.Files
-
-import mdoc.{Exit, MainSettings, PostModifier, PostModifierContext}
+import mdoc._
 
 class EvilplotPostModifier extends PostModifier {
   val name = "evilplot"
@@ -28,9 +27,5 @@ class EvilplotPostModifier extends PostModifier {
         ""
     }
   }
-
-  override def onStart(settings: MainSettings): Unit = ()
-
-  override def onExit(exit: Exit): Unit = ()
 
 }

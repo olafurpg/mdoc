@@ -1,5 +1,6 @@
 package tests.markdown
 
+import java.util.concurrent.atomic.AtomicInteger
 import mdoc._
 
 /**
@@ -9,15 +10,17 @@ import mdoc._
   * the same thread.
   */
 object LifeCycleCounter {
-  val numberOfStarts: ThreadLocal[Integer] = ThreadLocal.withInitial(() => 0)
-  val numberOfExists: ThreadLocal[Integer] = ThreadLocal.withInitial(() => 0)
+  val numberOfStarts: ThreadLocal[AtomicInteger] =
+    ThreadLocal.withInitial(() => new AtomicInteger(0))
+  val numberOfExists: ThreadLocal[AtomicInteger] =
+    ThreadLocal.withInitial(() => new AtomicInteger(0))
 
   /**
     * Reset counters to zero.
     */
   def reset(): Unit = {
-    LifeCycleCounter.numberOfStarts.set(0)
-    LifeCycleCounter.numberOfExists.set(0)
+    LifeCycleCounter.numberOfStarts.remove()
+    LifeCycleCounter.numberOfExists.remove()
   }
 }
 
@@ -42,15 +45,15 @@ class LifeCycleModifier extends PostModifier {
     */
   override def onStart(settings: MainSettings): Unit = {
     numberOfStarts += 1
-    LifeCycleCounter.numberOfStarts.set(LifeCycleCounter.numberOfStarts.get() + 1)
+    LifeCycleCounter.numberOfStarts.get().incrementAndGet()
   }
 
   /**
     * This is called once when the [[mdoc.Main]] process finishes
     * @param exit is the exit code returned by mdoc's processing
     */
-  override def onExit(exit: Exit): Unit = {
+  override def onExit(exit: MainExit): Unit = {
     numberOfExists += 1
-    LifeCycleCounter.numberOfExists.set(LifeCycleCounter.numberOfExists.get() + 1)
+    LifeCycleCounter.numberOfStarts.get().decrementAndGet()
   }
 }

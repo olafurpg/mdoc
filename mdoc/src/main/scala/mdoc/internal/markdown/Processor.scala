@@ -22,6 +22,7 @@ import mdoc.internal.markdown.Modifier._
 import mdoc.internal.pos.PositionSyntax._
 import pprint.TPrintColors
 import scala.meta.io.RelativePath
+import mdoc.internal.compilers.MarkdownCompiler
 
 object MdocDialect {
 

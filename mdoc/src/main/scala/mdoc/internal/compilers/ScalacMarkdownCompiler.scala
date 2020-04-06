@@ -1,4 +1,4 @@
-package mdoc.internal.markdown
+package mdoc.internal.compilers
 
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -28,125 +28,16 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.io.VirtualDirectory
 import sun.misc.Unsafe
+import mdoc.internal.markdown.EvaluatedDocument
+import mdoc.internal.markdown.SectionInput
+import mdoc.internal.markdown.FilterStoreReporter
+import mdoc.internal.markdown.CodeBuilder
 
-object MarkdownCompiler {
-
-  def default(): MarkdownCompiler = fromClasspath(classpath = "", scalacOptions = "")
-
-  def buildDocument(
-      compiler: MarkdownCompiler,
-      reporter: Reporter,
-      sectionInputs: List[SectionInput],
-      instrumented: String,
-      filename: String
-  ): EvaluatedDocument = {
-    val instrumentedInput = InstrumentedInput(filename, instrumented)
-    reporter.debug(s"$filename: instrumented code\n$instrumented")
-    val compileInput = Input.VirtualFile(filename, instrumented)
-    val edit = TokenEditDistance.fromTrees(sectionInputs.map(_.source), compileInput)
-    val doc = compiler.compile(compileInput, reporter, edit, "repl.Session$") match {
-      case Some(cls) =>
-        val ctor = cls.getDeclaredConstructor()
-        ctor.setAccessible(true)
-        val doc = ctor.newInstance().asInstanceOf[DocumentBuilder].$doc
-        try {
-          doc.build(instrumentedInput)
-        } catch {
-          case e: DocumentException =>
-            val index = e.sections.length - 1
-            val input = sectionInputs(index).input
-            val pos =
-              if (e.pos.isEmpty) {
-                Position.Range(input, 0, 0)
-              } else {
-                val slice = Position.Range(
-                  input,
-                  e.pos.startLine,
-                  e.pos.startColumn,
-                  e.pos.endLine,
-                  e.pos.endColumn
-                )
-                slice.toUnslicedPosition
-              }
-            reporter.error(pos, e.getCause)
-            Document(instrumentedInput, e.sections)
-          case MdocNonFatal(e) =>
-            reporter.error(e)
-            Document.empty(instrumentedInput)
-        }
-      case None =>
-        // An empty document will render as the original markdown
-        Document.empty(instrumentedInput)
-    }
-    EvaluatedDocument(doc, sectionInputs)
-  }
-
-  def fromClasspath(classpath: String, scalacOptions: String): MarkdownCompiler = {
-    val fullClasspath =
-      if (classpath.isEmpty) defaultClasspath(_ => true)
-      else {
-        val base = Classpath(classpath)
-        val runtime = defaultClasspath(path => path.toString.contains("mdoc-runtime"))
-        base ++ runtime
-      }
-    new MarkdownCompiler(fullClasspath.syntax, scalacOptions)
-  }
-
-  private def defaultClasspath(fn: Path => Boolean): Classpath = {
-    val paths =
-      getURLs(getClass.getClassLoader)
-        .map(url => AbsolutePath(Paths.get(url.toURI)))
-    Classpath(paths.toList)
-  }
-
-  /**
-    * Utility to get SystemClassLoader/ClassLoader urls in java8 and java9+
-    *   Based upon: https://gist.github.com/hengyunabc/644f8e84908b7b405c532a51d8e34ba9
-    */
-  private def getURLs(classLoader: ClassLoader): Seq[URL] = {
-    if (classLoader.isInstanceOf[URLClassLoader]) {
-      classLoader.asInstanceOf[URLClassLoader].getURLs()
-      // java9+
-    } else if (classLoader
-        .getClass()
-        .getName()
-        .startsWith("jdk.internal.loader.ClassLoaders$")) {
-      try {
-        val field = classOf[Unsafe].getDeclaredField("theUnsafe")
-        field.setAccessible(true)
-        val unsafe = field.get(null).asInstanceOf[Unsafe]
-
-        // jdk.internal.loader.ClassLoaders.AppClassLoader.ucp
-        val ucpField = classLoader.getClass().getDeclaredField("ucp")
-        val ucpFieldOffset: Long = unsafe.objectFieldOffset(ucpField)
-        val ucpObject = unsafe.getObject(classLoader, ucpFieldOffset)
-
-        // jdk.internal.loader.URLClassPath.path
-        val pathField = ucpField.getType().getDeclaredField("path")
-        val pathFieldOffset = unsafe.objectFieldOffset(pathField)
-        val paths: Seq[URL] = unsafe
-          .getObject(ucpObject, pathFieldOffset)
-          .asInstanceOf[java.util.ArrayList[URL]]
-          .asScala
-
-        paths
-      } catch {
-        case ex: Exception =>
-          ex.printStackTrace()
-          Nil
-      }
-    } else {
-      Nil
-    }
-  }
-
-}
-
-class MarkdownCompiler(
+class ScalacMarkdownCompiler(
     classpath: String,
     scalacOptions: String,
     target: AbstractFile = new VirtualDirectory("(memory)", None)
-) {
+) extends MarkdownCompiler {
   private val settings = new Settings()
   settings.Yrangepos.value = true
   settings.deprecation.value = true // enable detailed deprecation warnings
@@ -164,6 +55,7 @@ class MarkdownCompiler(
   private def reset(): Unit = {
     global = new Global(settings, sreporter)
   }
+  def close(): Unit = global.close()
   private val appClasspath: Array[URL] = classpath
     .split(File.pathSeparator)
     .map(path => new File(path).toURI.toURL)
@@ -206,7 +98,11 @@ class MarkdownCompiler(
   def hasErrors: Boolean = sreporter.hasErrors
   def hasWarnings: Boolean = sreporter.hasWarnings
 
-  def compileSources(input: Input, vreporter: Reporter, edit: TokenEditDistance): Unit = {
+  def compileSources(
+      input: Input.VirtualFile,
+      vreporter: Reporter,
+      edit: TokenEditDistance
+  ): Unit = {
     clearTarget()
     sreporter.reset()
     val g = global
@@ -216,11 +112,19 @@ class MarkdownCompiler(
   }
 
   def compile(
-      input: Input,
+      input: Input.VirtualFile,
+      vreporter: Reporter,
+      edit: TokenEditDistance,
+      className: String
+  ): Option[Class[_]] = {
+    compileWithRetry(input, vreporter, edit, className, retry = 0)
+  }
+  def compileWithRetry(
+      input: Input.VirtualFile,
       vreporter: Reporter,
       edit: TokenEditDistance,
       className: String,
-      retry: Int = 0
+      retry: Int
   ): Option[Class[_]] = {
     reset()
     compileSources(input, vreporter, edit)
@@ -232,7 +136,7 @@ class MarkdownCompiler(
         case _: ClassNotFoundException =>
           if (retry < 1) {
             reset()
-            compile(input, vreporter, edit, className, retry + 1)
+            compileWithRetry(input, vreporter, edit, className, retry + 1)
           } else {
             vreporter.error(
               s"${input.syntax}: skipping file, the compiler produced no classfiles " +

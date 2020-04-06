@@ -7,7 +7,7 @@ import mdoc.internal.io.ConsoleReporter
 import mdoc.internal.livereload.Resources
 import mdoc.internal.markdown.CodeBuilder
 import mdoc.internal.markdown.Gensym
-import mdoc.internal.markdown.MarkdownCompiler
+import mdoc.internal.compilers.MarkdownCompiler
 import mdoc.internal.pos.PositionSyntax._
 import mdoc.internal.pos.TokenEditDistance
 import org.scalajs.core.tools.io.IRFileCache
@@ -25,6 +25,7 @@ import scala.meta.Term
 import scala.meta.inputs.Input
 import scala.meta.io.Classpath
 import scala.reflect.io.VirtualDirectory
+import mdoc.internal.compilers.ScalacMarkdownCompiler
 
 class JsModifier extends mdoc.PreModifier {
   override val name = "js"
@@ -93,7 +94,7 @@ class JsModifier extends mdoc.PreModifier {
         if (classpathHash != newClasspathHash) {
           linker = newLinker()
           classpathHash = newClasspathHash
-          maybeCompiler = Some(new MarkdownCompiler(classpath, scalacOptions, target))
+          maybeCompiler = Some(new ScalacMarkdownCompiler(classpath, scalacOptions, target))
           virtualIrFiles = {
             val irContainer =
               IRFileCache.IRContainer.fromClasspath(Classpath(classpath).entries.map(_.toFile))

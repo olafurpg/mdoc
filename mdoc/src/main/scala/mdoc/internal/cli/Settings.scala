@@ -28,7 +28,9 @@ import scala.meta.io.RelativePath
 import mdoc.StringModifier
 import mdoc.Variable
 import mdoc.Reporter
-import mdoc.internal.markdown.{GitHubIdGenerator, MarkdownCompiler, ReplVariablePrinter}
+import mdoc.internal.markdown.ReplVariablePrinter
+import mdoc.internal.compilers.MarkdownCompiler
+import mdoc.internal.markdown.GitHubIdGenerator
 
 class Section(val name: String) extends StaticAnnotation
 
@@ -98,6 +100,10 @@ case class Settings(
     usage: Boolean = false,
     @Description("Print out the version number and exit")
     version: Boolean = false,
+    @Description("The compiler to use, must be one of 'scalac' or 'bloop'")
+    compiler: String = "scalac",
+    @Description("Directory where mdoc can place generated files.")
+    target: Option[AbsolutePath] = None,
     @Description("Set of file extensions to treat as markdown files.")
     markdownExtensions: List[String] = List("md", "html"),
     @Description(

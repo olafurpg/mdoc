@@ -10,7 +10,7 @@ import mdoc.internal.cli.MdocProperties
 import mdoc.internal.cli.Settings
 import mdoc.internal.io.ConsoleReporter
 import mdoc.internal.markdown.Markdown
-import mdoc.internal.markdown.MarkdownCompiler
+import mdoc.internal.compilers.MarkdownCompiler
 import scala.meta.inputs.Input
 import scala.meta.internal.io.PathIO
 import scala.meta.io.AbsolutePath
@@ -49,7 +49,7 @@ abstract class BaseMarkdownSuite extends munit.FunSuite {
     new ConsoleReporter(new PrintStream(myStdout))
   }
   protected def scalacOptions: String = ""
-  private val compiler = MarkdownCompiler.fromClasspath("", scalacOptions)
+  private val compiler = MarkdownCompiler.fromSettings(baseSettings)
   private def newContext(settings: Settings, reporter: ConsoleReporter) = {
     settings.validate(reporter)
     if (reporter.hasErrors) fail("reporter has errors")

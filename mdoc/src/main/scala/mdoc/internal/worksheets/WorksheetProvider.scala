@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 import mdoc.internal.markdown.SectionInput
 import mdoc.internal.markdown.Modifier
 import mdoc.internal.markdown.Instrumenter
-import mdoc.internal.markdown.MarkdownCompiler
+import mdoc.internal.compilers.MarkdownCompiler
 import mdoc.document.Statement
 import mdoc.document.RangePosition
 import mdoc.internal.cli.Settings

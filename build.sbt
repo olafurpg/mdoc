@@ -46,6 +46,8 @@ crossScalaVersions := Nil
 
 val V = new {
   val scalameta = "4.3.7"
+  val bloop = "1.4.0-RC1-187-1b2f9b25"
+  val bsp4j = "2.0.0-M11"
   val munit = "0.7.1"
 }
 
@@ -98,12 +100,18 @@ lazy val mdoc = project
     buildInfoKeys := Seq[BuildInfoKey](
       version,
       scalaVersion,
-      scalaBinaryVersion
+      scalaBinaryVersion,
+      "bloopVersion" -> V.bloop,
+      "bspVersion" -> V.bsp4j
     ),
     libraryDependencies ++= List(
       "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scalameta" %% "scalameta" % V.scalameta,
+      "ch.epfl.scala" % "bsp4j" % V.bsp4j,
+      "io.get-coursier" % "interface" % "0.0.21",
+      "ch.epfl.scala" %% "bloop-config" % V.bloop,
+      "ch.epfl.scala" %% "bloop-launcher" % V.bloop,
       "com.geirsson" %% "metaconfig-typesafe-config" % "0.9.9",
       "com.vladsch.flexmark" % "flexmark-all" % "0.40.34",
       "com.lihaoyi" %% "fansi" % fansiVersion.value,

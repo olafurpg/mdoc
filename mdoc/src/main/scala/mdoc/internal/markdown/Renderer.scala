@@ -14,6 +14,7 @@ import mdoc.internal.pos.PositionSyntax._
 import mdoc.internal.pos.TokenEditDistance
 import scala.meta._
 import scala.meta.inputs.Position
+import mdoc.internal.compilers.MarkdownCompiler
 
 object Renderer {
 

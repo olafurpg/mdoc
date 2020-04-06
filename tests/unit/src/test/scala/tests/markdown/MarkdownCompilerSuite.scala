@@ -3,7 +3,7 @@ package tests.markdown
 import munit.FunSuite
 import scala.meta._
 import mdoc.internal.io.ConsoleReporter
-import mdoc.internal.markdown.MarkdownCompiler
+import mdoc.internal.compilers.MarkdownCompiler
 import mdoc.internal.markdown.Renderer
 import mdoc.internal.markdown.ReplVariablePrinter
 

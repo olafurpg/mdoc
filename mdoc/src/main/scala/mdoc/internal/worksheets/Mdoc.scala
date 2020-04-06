@@ -10,7 +10,7 @@ import mdoc.internal.cli.Context
 import mdoc.internal.cli.Settings
 import scala.meta.internal.io.PathIO
 import mdoc.internal.io.ConsoleReporter
-import mdoc.internal.markdown.MarkdownCompiler
+import mdoc.internal.compilers.MarkdownCompiler
 import scala.meta.inputs.Input
 import mdoc.internal.worksheets.Compat._
 import mdoc.MainSettings
@@ -36,7 +36,7 @@ class Mdoc(settings: MainSettings) extends i.Mdoc {
 
   def shutdown(): Unit = {
     if (myContext != null) {
-      myContext.compiler.global.close()
+      myContext.compiler.close()
       usedDummy()
     }
   }

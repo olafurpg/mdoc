@@ -37,14 +37,21 @@ object MarkdownCompiler {
       compiler: MarkdownCompiler,
       reporter: Reporter,
       sectionInputs: List[SectionInput],
-      instrumented: String,
+      instrumented: Instrumented,
       filename: String
   ): EvaluatedDocument = {
-    val instrumentedInput = InstrumentedInput(filename, instrumented)
+    val instrumentedInput = InstrumentedInput(filename, instrumented.source)
     reporter.debug(s"$filename: instrumented code\n$instrumented")
-    val compileInput = Input.VirtualFile(filename, instrumented)
+    val compileInput = Input.VirtualFile(filename, instrumented.source)
     val edit = TokenEditDistance.fromTrees(sectionInputs.map(_.source), compileInput)
-    val doc = compiler.compile(compileInput, reporter, edit, "repl.Session$") match {
+    val compiled = compiler.compile(
+      compileInput,
+      reporter,
+      edit,
+      "repl.Session$",
+      instrumented.fileImports.map(_.toInput)
+    )
+    val doc = compiled match {
       case Some(cls) =>
         val ctor = cls.getDeclaredConstructor()
         ctor.setAccessible(true)
@@ -208,12 +215,17 @@ class MarkdownCompiler(
   def hasErrors: Boolean = sreporter.hasErrors
   def hasWarnings: Boolean = sreporter.hasWarnings
 
-  def compileSources(input: Input, vreporter: Reporter, edit: TokenEditDistance): Unit = {
+  def compileSources(
+      input: Input,
+      vreporter: Reporter,
+      edit: TokenEditDistance,
+      fileImports: List[Input]
+  ): Unit = {
     clearTarget()
     sreporter.reset()
     val g = global
     val run = new g.Run
-    run.compileSources(List(toSource(input)))
+    run.compileSources((input :: fileImports).map(toSource))
     report(vreporter, input, edit)
   }
 
@@ -222,10 +234,11 @@ class MarkdownCompiler(
       vreporter: Reporter,
       edit: TokenEditDistance,
       className: String,
+      fileImports: List[Input],
       retry: Int = 0
   ): Option[Class[_]] = {
     reset()
-    compileSources(input, vreporter, edit)
+    compileSources(input, vreporter, edit, fileImports)
     if (!sreporter.hasErrors) {
       val loader = new AbstractFileClassLoader(target, appClassLoader)
       try {
@@ -234,7 +247,7 @@ class MarkdownCompiler(
         case _: ClassNotFoundException =>
           if (retry < 1) {
             reset()
-            compile(input, vreporter, edit, className, retry + 1)
+            compile(input, vreporter, edit, className, fileImports, retry + 1)
           } else {
             vreporter.error(
               s"${input.syntax}: skipping file, the compiler produced no classfiles " +

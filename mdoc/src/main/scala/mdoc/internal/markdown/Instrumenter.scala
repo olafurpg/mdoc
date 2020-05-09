@@ -9,21 +9,25 @@ import mdoc.internal.markdown.Instrumenter.Binders
 import scala.meta.Mod.Lazy
 import scala.collection.mutable
 import mdoc.Reporter
+import mdoc.internal.cli.InputFile
+import java.nio.file.Path
 
-class Instrumenter(sections: List[SectionInput]) {
-  def instrument(reporter: Reporter): Instrumented = {
+class Instrumenter(file: InputFile, sections: List[SectionInput], reporter: Reporter) {
+  def instrument(): Instrumented = {
     printAsScript()
     Instrumented.fromSource(
       out.toString,
       scalacOptions.toList,
       dependencies.toList,
       repositories.toList,
+      files.toList,
       reporter
     )
   }
   private val scalacOptions = mutable.ListBuffer.empty[Name.Indeterminate]
   private val dependencies = mutable.ListBuffer.empty[Name.Indeterminate]
   private val repositories = mutable.ListBuffer.empty[Name.Indeterminate]
+  private val files = mutable.ListBuffer.empty[FileImport]
   private val out = new ByteArrayOutputStream()
   private val sb = new PrintStream(out)
   val gensym = new Gensym()
@@ -93,26 +97,33 @@ class Instrumenter(sections: List[SectionInput]) {
       }
       stat match {
         case i: Import =>
+          def isFileQualifier(qual: Term): Boolean = qual match {
+            case Term.Name("$file") => true
+            case Term.Select(next, _) => isFileQualifier(next)
+            case _ => false
+          }
+          def printImporter(importer: Importer): Unit = {
+            sb.print("import ")
+            sb.print(importer.syntax)
+            sb.print(";")
+          }
           i.importers.foreach {
+            case importer @ Importer(qual, List(Importee.Name(name: Name.Indeterminate)))
+                if isFileQualifier(qual) =>
+              files ++= FileImport.fromImport(file.inputFile, qual, name, reporter)
+              printImporter(importer)
             case Importer(
-                Term.Name("$ivy" | "$dep"),
-                List(Importee.Name(dep: Name.Indeterminate))
-                ) =>
-              dependencies += dep
-            case Importer(
-                Term.Name("$repo"),
-                List(Importee.Name(repo: Name.Indeterminate))
-                ) =>
-              repositories += repo
-            case Importer(
-                Term.Name("$scalac"),
-                List(Importee.Name(option: Name.Indeterminate))
-                ) =>
-              scalacOptions += option
+                Term.Name(qualifier),
+                List(Importee.Name(name: Name.Indeterminate))
+                ) if Instrumenter.magicImports(qualifier) =>
+              qualifier match {
+                case "$ivy" | "$dep" => dependencies += name
+                case "$repo" => repositories += name
+                case "$scalac" => scalacOptions += name
+                case _ =>
+              }
             case importer =>
-              sb.print("import ")
-              sb.print(importer.syntax)
-              sb.print(";")
+              printImporter(importer)
           }
         case _ =>
           sb.print(stat.pos.text)
@@ -125,6 +136,13 @@ class Instrumenter(sections: List[SectionInput]) {
   }
 }
 object Instrumenter {
+  val magicImports = Set(
+    "$file",
+    "$scalac",
+    "$repo",
+    "$dep",
+    "$ivy"
+  )
   def reset(mod: Modifier, identifier: String): String = {
     val ctor =
       if (mod.isResetClass) s"new $identifier()"
@@ -134,8 +152,12 @@ object Instrumenter {
       else "object"
     s"$ctor\n}\n$keyword $identifier {\n"
   }
-  def instrument(sections: List[SectionInput], reporter: Reporter): Instrumented = {
-    val instrumented = new Instrumenter(sections).instrument(reporter)
+  def instrument(
+      file: InputFile,
+      sections: List[SectionInput],
+      reporter: Reporter
+  ): Instrumented = {
+    val instrumented = new Instrumenter(file, sections, reporter).instrument()
     instrumented.copy(source = wrapBody(instrumented.source))
   }
 

@@ -119,7 +119,7 @@ class Processor(implicit ctx: Context) {
             SectionInput(input, Source(Nil), mod)
         }
     }
-    val instrumented = Instrumenter.instrument(sectionInputs, ctx.reporter)
+    val instrumented = Instrumenter.instrument(doc.file, sectionInputs, ctx.reporter)
     if (ctx.reporter.hasErrors) {
       return
     }
@@ -174,7 +174,7 @@ class Processor(implicit ctx: Context) {
       markdownCompiler,
       ctx.reporter,
       sectionInputs,
-      instrumented.source,
+      instrumented,
       filename
     )
     rendered.sections.zip(inputs).foreach {

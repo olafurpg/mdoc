@@ -68,7 +68,7 @@ abstract class BaseMarkdownSuite extends tests.BaseSuite {
       val reporter = newReporter()
       val context = newContext(settings, reporter)
       val input = Input.VirtualFile(name.name + ".md", original)
-      val file = InputFile.fromSettings(input.path, settings)
+      val file = InputFile.fromRelativeFilename(input.path, settings)
       Markdown.toMarkdown(input, context, file, baseSettings.site, reporter, settings)
       assert(reporter.hasErrors, "Expected errors but reporter.hasErrors=false")
       val obtainedErrors = Compat.postProcess(
@@ -92,7 +92,7 @@ abstract class BaseMarkdownSuite extends tests.BaseSuite {
       val reporter = newReporter()
       val context = newContext(settings, reporter)
       val input = Input.VirtualFile(name.name + ".md", original)
-      val file = InputFile.fromSettings(input.path, settings)
+      val file = InputFile.fromRelativeFilename(input.path, settings)
       val obtained =
         Markdown.toMarkdown(input, context, file, baseSettings.site, reporter, settings)
       val colorOut = myStdout.toString()

@@ -25,9 +25,15 @@ import scala.meta.io.RelativePath
 import coursierapi.error.SimpleResolutionError
 import coursierapi.error.CoursierError
 import coursierapi.error.MultipleResolutionError
+import scala.meta.io.AbsolutePath
+import scala.meta.parsers.Parsed
+import scala.meta.Source
 
 object MdocDialect {
 
+  def parse(path: AbsolutePath): Parsed[Source] = {
+    scala(Input.VirtualFile(path.toString(), path.readText)).parse[Source]
+  }
   val scala = Scala213.copy(
     allowToplevelTerms = true,
     toplevelSeparator = ""

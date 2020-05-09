@@ -23,19 +23,14 @@ class Instrumenter(
     printAsScript()
     Instrumented.fromSource(
       out.toString,
-      scalacOptions.toList,
-      dependencies.toList,
-      repositories.toList,
-      files.toList,
+      magic.scalacOptions.toList,
+      magic.dependencies.toList,
+      magic.repositories.toList,
+      magic.files.toList,
       reporter
     )
   }
-  private val scalacOptions = mutable.ListBuffer.empty[Name.Indeterminate]
-  private val dependencies = mutable.ListBuffer.empty[Name.Indeterminate]
-  private val repositories = mutable.ListBuffer.empty[Name.Indeterminate]
-  private val files = mutable.ListBuffer.empty[FileImport]
-  private val isVisitedFile = mutable.Set.empty[AbsolutePath]
-  private val File = new FileImport.Matcher(settings, file, reporter, isVisitedFile)
+  val magic = new MagicImports(settings, reporter, file)
   private val out = new ByteArrayOutputStream()
   private val sb = new PrintStream(out)
   val gensym = new Gensym()
@@ -111,19 +106,9 @@ class Instrumenter(
             sb.print(";")
           }
           i.importers.foreach {
-            case importer @ File(imports) =>
-              files ++= imports
+            case importer @ magic.Printable() =>
               printImporter(importer)
-            case Importer(
-                Term.Name(qualifier),
-                List(Importee.Name(name: Name.Indeterminate))
-                ) if Instrumenter.magicImports(qualifier) =>
-              qualifier match {
-                case "$ivy" | "$dep" => dependencies += name
-                case "$repo" => repositories += name
-                case "$scalac" => scalacOptions += name
-                case _ =>
-              }
+            case magic.NonPrintable() =>
             case importer =>
               printImporter(importer)
           }

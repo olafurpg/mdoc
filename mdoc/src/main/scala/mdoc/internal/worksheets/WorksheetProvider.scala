@@ -37,7 +37,7 @@ class WorksheetProvider(settings: Settings) {
       Modifier.Default()
     )
     val sectionInputs = List(sectionInput)
-    val file = InputFile.fromSettings(input.path, settings)
+    val file = InputFile.fromRelativeFilename(input.path, settings)
     val instrumented = Instrumenter.instrument(file, sectionInputs, settings, reporter)
     val compiler = ctx.compiler(instrumented)
     val rendered =

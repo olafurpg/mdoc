@@ -30,7 +30,7 @@ class MarkdownCompilerSuite extends FunSuite {
   ): Unit = {
     test(name) {
       val inputs = original.map(s => Input.String(s))
-      val file = InputFile.fromSettings(name + ".md", settings)
+      val file = InputFile.fromRelativeFilename(name + ".md", settings)
       val obtained = Renderer.render(
         file,
         inputs,

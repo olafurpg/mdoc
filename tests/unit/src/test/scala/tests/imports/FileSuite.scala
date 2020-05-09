@@ -92,13 +92,51 @@ class FileSuite extends BaseCliSuite {
       |println(s"${hello2.first} ${hello3.second}")
       |```
       |""".stripMargin,
-    """|/hello.sc
-       |val message = "Hello world!"
+    """|/hello1.sc
+       |val first = "hello"
+       |val second = "world"
+       |/hello2.sc
+       |import $file.hello1
+       |val first = hello1.first
+       |/hello3.sc
+       |import $file.hello1
+       |val second = hello1.second
        |/readme.md
        |```scala
-       |import $file.hello
-       |println(hello.message)
-       |// Hello world!
+       |import $file.hello2, $file.hello3
+       |println(s"${hello2.first} ${hello3.second}")
+       |// hello world
+       |```
+       |""".stripMargin
+  )
+
+  checkCli(
+    "cycles",
+    """
+      |/hello1.sc
+      |import $file.hello2
+      |val first = hello2.first
+      |/hello2.sc
+      |import $file.hello1
+      |val first = hello1.first
+      |/readme.md
+      |import $file.hello1
+      |```scala mdoc
+      |println(s"${hello1.first} world")
+      |```
+      |""".stripMargin,
+    """|
+       |/hello1.sc
+       |import $file.hello2
+       |val first = hello2.first
+       |/hello2.sc
+       |import $file.hello1
+       |val first = hello1.first
+       |/readme.md
+       |```scala
+       |import $file.hello2
+       |println(s"${hello2.first} ${hello3.second}")
+       |// hello world
        |```
        |""".stripMargin
   )

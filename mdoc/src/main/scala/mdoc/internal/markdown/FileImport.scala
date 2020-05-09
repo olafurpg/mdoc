@@ -40,13 +40,12 @@ object FileImport {
   class Matcher(
       settings: Settings,
       file: InputFile,
-      reporter: Reporter,
-      isVisited: mutable.Set[AbsolutePath]
+      reporter: Reporter
   ) {
-    def unapply(importer: Importer): Option[List[FileImport]] = importer match {
+    def unapply(importer: Importer): Option[FileImport] = importer match {
       case importer @ Importer(qual, List(Importee.Name(name: Name.Indeterminate)))
           if isFileQualifier(qual) =>
-        Some(FileImport.fromImport(file.inputFile, qual, name, reporter, isVisited, settings))
+        FileImport.fromImport(file.inputFile, qual, name, reporter, settings)
       case _ =>
         None
     }
@@ -62,9 +61,8 @@ object FileImport {
       qual: Term,
       fileImport: Name.Indeterminate,
       reporter: Reporter,
-      isVisited: mutable.Set[AbsolutePath],
       settings: Settings
-  ): List[FileImport] = {
+  ): Option[FileImport] = {
     def loop(path: Path, parts: List[String]): Path = parts match {
       case Nil => path
       case "^" :: tail =>
@@ -82,14 +80,12 @@ object FileImport {
     val objectName = parts.last
     val importedPath = loop(base.toNIO.getParent(), relativePath)
     val scriptPath = AbsolutePath(importedPath).resolveSibling(_ + ".sc")
-    if (isVisited(scriptPath)) {
-      Nil
-    } else if (scriptPath.isFile) {
+    if (scriptPath.isFile) {
       val text = scriptPath.readText
-      List(FileImport(scriptPath, qual, fileImport, objectName, packageName, text))
+      Some(FileImport(scriptPath, qual, fileImport, objectName, packageName, text))
     } else {
       reporter.error(fileImport.pos, s"no such file $scriptPath")
-      Nil
+      None
     }
   }
 }

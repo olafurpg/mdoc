@@ -119,7 +119,7 @@ class Processor(implicit ctx: Context) {
             SectionInput(input, Source(Nil), mod)
         }
     }
-    val instrumented = Instrumenter.instrument(doc.file, sectionInputs, ctx.reporter)
+    val instrumented = Instrumenter.instrument(doc.file, sectionInputs, ctx.settings, ctx.reporter)
     if (ctx.reporter.hasErrors) {
       return
     }

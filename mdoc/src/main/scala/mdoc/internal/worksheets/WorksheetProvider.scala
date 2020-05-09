@@ -38,7 +38,7 @@ class WorksheetProvider(settings: Settings) {
     )
     val sectionInputs = List(sectionInput)
     val file = InputFile.fromSettings(input.path, settings)
-    val instrumented = Instrumenter.instrument(file, sectionInputs, reporter)
+    val instrumented = Instrumenter.instrument(file, sectionInputs, settings, reporter)
     val compiler = ctx.compiler(instrumented)
     val rendered =
       MarkdownCompiler.buildDocument(compiler, reporter, sectionInputs, instrumented, input.path)

@@ -31,8 +31,15 @@ class MarkdownCompilerSuite extends FunSuite {
     test(name) {
       val inputs = original.map(s => Input.String(s))
       val file = InputFile.fromSettings(name + ".md", settings)
-      val obtained =
-        Renderer.render(file, inputs, compiler, reporter, name + ".md", ReplVariablePrinter)
+      val obtained = Renderer.render(
+        file,
+        inputs,
+        compiler,
+        settings,
+        reporter,
+        name + ".md",
+        ReplVariablePrinter
+      )
       assertNoDiff(
         obtained,
         Compat(expected, compat)

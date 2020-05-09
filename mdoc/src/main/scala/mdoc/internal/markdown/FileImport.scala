@@ -8,6 +8,10 @@ import mdoc.internal.pos.PositionSyntax._
 import scala.meta.Importee
 import scala.meta.Term
 import mdoc.Reporter
+import scala.meta.Importer
+import mdoc.internal.cli.InputFile
+import scala.collection.mutable
+import mdoc.internal.cli.Settings
 
 final case class FileImport(
     path: AbsolutePath,
@@ -33,12 +37,34 @@ final case class FileImport(
   }
 }
 object FileImport {
-  def fromImport(
+  class Matcher(
+      settings: Settings,
+      file: InputFile,
+      reporter: Reporter,
+      isVisited: mutable.Set[AbsolutePath]
+  ) {
+    def unapply(importer: Importer): Option[List[FileImport]] = importer match {
+      case importer @ Importer(qual, List(Importee.Name(name: Name.Indeterminate)))
+          if isFileQualifier(qual) =>
+        Some(FileImport.fromImport(file.inputFile, qual, name, reporter, isVisited, settings))
+      case _ =>
+        None
+    }
+    private def isFileQualifier(qual: Term): Boolean = qual match {
+      case Term.Name("$file") => true
+      case Term.Select(next, _) => isFileQualifier(next)
+      case _ => false
+    }
+  }
+
+  private def fromImport(
       base: AbsolutePath,
       qual: Term,
       fileImport: Name.Indeterminate,
-      reporter: Reporter
-  ): Option[FileImport] = {
+      reporter: Reporter,
+      isVisited: mutable.Set[AbsolutePath],
+      settings: Settings
+  ): List[FileImport] = {
     def loop(path: Path, parts: List[String]): Path = parts match {
       case Nil => path
       case "^" :: tail =>
@@ -56,11 +82,14 @@ object FileImport {
     val objectName = parts.last
     val importedPath = loop(base.toNIO.getParent(), relativePath)
     val scriptPath = AbsolutePath(importedPath).resolveSibling(_ + ".sc")
-    if (scriptPath.isFile) {
-      Some(FileImport(scriptPath, qual, fileImport, objectName, packageName, scriptPath.readText))
+    if (isVisited(scriptPath)) {
+      Nil
+    } else if (scriptPath.isFile) {
+      val text = scriptPath.readText
+      List(FileImport(scriptPath, qual, fileImport, objectName, packageName, text))
     } else {
       reporter.error(fileImport.pos, s"no such file $scriptPath")
-      None
+      Nil
     }
   }
 }

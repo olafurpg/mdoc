@@ -11,8 +11,14 @@ import scala.collection.mutable
 import mdoc.Reporter
 import mdoc.internal.cli.InputFile
 import java.nio.file.Path
+import mdoc.internal.cli.Settings
 
-class Instrumenter(file: InputFile, sections: List[SectionInput], reporter: Reporter) {
+class Instrumenter(
+    file: InputFile,
+    sections: List[SectionInput],
+    settings: Settings,
+    reporter: Reporter
+) {
   def instrument(): Instrumented = {
     printAsScript()
     Instrumented.fromSource(
@@ -28,6 +34,8 @@ class Instrumenter(file: InputFile, sections: List[SectionInput], reporter: Repo
   private val dependencies = mutable.ListBuffer.empty[Name.Indeterminate]
   private val repositories = mutable.ListBuffer.empty[Name.Indeterminate]
   private val files = mutable.ListBuffer.empty[FileImport]
+  private val isVisitedFile = mutable.Set.empty[AbsolutePath]
+  private val File = new FileImport.Matcher(settings, file, reporter, isVisitedFile)
   private val out = new ByteArrayOutputStream()
   private val sb = new PrintStream(out)
   val gensym = new Gensym()
@@ -97,20 +105,14 @@ class Instrumenter(file: InputFile, sections: List[SectionInput], reporter: Repo
       }
       stat match {
         case i: Import =>
-          def isFileQualifier(qual: Term): Boolean = qual match {
-            case Term.Name("$file") => true
-            case Term.Select(next, _) => isFileQualifier(next)
-            case _ => false
-          }
           def printImporter(importer: Importer): Unit = {
             sb.print("import ")
             sb.print(importer.syntax)
             sb.print(";")
           }
           i.importers.foreach {
-            case importer @ Importer(qual, List(Importee.Name(name: Name.Indeterminate)))
-                if isFileQualifier(qual) =>
-              files ++= FileImport.fromImport(file.inputFile, qual, name, reporter)
+            case importer @ File(imports) =>
+              files ++= imports
               printImporter(importer)
             case Importer(
                 Term.Name(qualifier),
@@ -155,9 +157,10 @@ object Instrumenter {
   def instrument(
       file: InputFile,
       sections: List[SectionInput],
+      settings: Settings,
       reporter: Reporter
   ): Instrumented = {
-    val instrumented = new Instrumenter(file, sections, reporter).instrument()
+    val instrumented = new Instrumenter(file, sections, settings, reporter).instrument()
     instrumented.copy(source = wrapBody(instrumented.source))
   }
 

@@ -8,7 +8,7 @@ class FileSuite extends BaseCliSuite {
     "basic",
     """
       |/hello.sc
-      |val message = "hello world"
+      |val message = "Hello world!"
       |/readme.md
       |```scala mdoc
       |import $file.hello
@@ -27,7 +27,7 @@ class FileSuite extends BaseCliSuite {
   )
 
   checkCli(
-    "inner",
+    "outer",
     """
       |/inner/hello.sc
       |val message = "hello world"
@@ -48,24 +48,57 @@ class FileSuite extends BaseCliSuite {
        |""".stripMargin
   )
 
+  1.to(3).foreach { i =>
+    val caret = "^" * i
+    val inner = 1.to(i).map(_ => "inner").mkString("/")
+    checkCli(
+      inner,
+      s"""
+         |/hello.sc
+         |val message = "hello world"
+         |/$inner/readme.md
+         |```scala mdoc
+         |import $$file.$caret.hello
+         |println(hello.message)
+         |```
+         |""".stripMargin,
+      s"""|/hello.sc
+          |val message = "hello world"
+          |/$inner/readme.md
+          |```scala
+          |import $$file.$caret.hello
+          |println(hello.message)
+          |// hello world
+          |```
+          |""".stripMargin
+    )
+  }
+
   checkCli(
-    "outer",
+    "nested",
     """
-      |/hello.sc
-      |val message = "hello world"
-      |/inner/readme.md
+      |/hello1.sc
+      |val first = "hello"
+      |val second = "world"
+      |/hello2.sc
+      |import $file.hello1
+      |val first = hello1.first
+      |/hello3.sc
+      |import $file.hello1
+      |val second = hello1.second
+      |/readme.md
       |```scala mdoc
-      |import $file.^.hello
-      |println(hello.message)
+      |import $file.hello2, $file.hello3
+      |println(s"${hello2.first} ${hello3.second}")
       |```
       |""".stripMargin,
     """|/hello.sc
-       |val message = "hello world"
-       |/inner/readme.md
+       |val message = "Hello world!"
+       |/readme.md
        |```scala
-       |import $file.^.hello
+       |import $file.hello
        |println(hello.message)
-       |// hello world
+       |// Hello world!
        |```
        |""".stripMargin
   )

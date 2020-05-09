@@ -43,6 +43,10 @@ object FileImport {
       case Nil => path
       case "^" :: tail =>
         loop(path.getParent, tail)
+      case "^^" :: tail =>
+        loop(path.getParent.getParent(), tail)
+      case "^^^" :: tail =>
+        loop(path.getParent.getParent.getParent(), tail)
       case head :: tail =>
         loop(path.resolve(head), tail)
     }

@@ -26,7 +26,7 @@ class Instrumenter(
       magic.scalacOptions.toList,
       magic.dependencies.toList,
       magic.repositories.toList,
-      magic.files.toList,
+      magic.files.values.toList,
       reporter
     )
   }
@@ -106,7 +106,7 @@ class Instrumenter(
             sb.print(";")
           }
           i.importers.foreach {
-            case importer @ magic.Printable() =>
+            case importer @ magic.Printable(_) =>
               printImporter(importer)
             case magic.NonPrintable() =>
             case importer =>

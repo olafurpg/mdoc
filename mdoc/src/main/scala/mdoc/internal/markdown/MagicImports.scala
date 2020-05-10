@@ -20,17 +20,15 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
   val scalacOptions = mutable.ListBuffer.empty[Name.Indeterminate]
   val dependencies = mutable.ListBuffer.empty[Name.Indeterminate]
   val repositories = mutable.ListBuffer.empty[Name.Indeterminate]
-  val files = mutable.ListBuffer.empty[FileImport]
-  private val isVisitedFile = mutable.Set.empty[AbsolutePath]
+  val files = mutable.Map.empty[AbsolutePath, FileImport]
 
   class Printable(inputFile: InputFile) {
     private val File = new FileImport.Matcher(settings, inputFile, reporter)
-    def unapply(importer: Importer): Boolean = importer match {
+    def unapply(importer: Importer): Option[FileImport] = importer match {
       case File(fileImport) =>
-        visitFile(fileImport)
-        true
+        Some(visitFile(fileImport))
       case _ =>
-        false
+        None
     }
   }
   object Printable extends Printable(file)
@@ -58,30 +56,35 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
     }
   }
 
-  private def visitFile(fileImport: FileImport): Unit = {
-    if (!isVisitedFile(fileImport.path)) {
-      files += fileImport
-      isVisitedFile += fileImport.path
-      val input = Input.VirtualFile(fileImport.path.toString(), fileImport.source)
-      val FilePrintable = new Printable(
-        InputFile.fromRelativeFilename(
-          fileImport.path.toRelative(this.file.inputFile.parent).toString(),
-          settings
-        )
+  private def visitFile(fileImport: FileImport): FileImport = {
+    files.getOrElseUpdate(fileImport.path, visitFileUncached(fileImport))
+  }
+  private def visitFileUncached(fileImport: FileImport): FileImport = {
+    val input = Input.VirtualFile(fileImport.path.toString(), fileImport.source)
+    val FilePrintable = new Printable(
+      InputFile.fromRelativeFilename(
+        fileImport.path.toRelative(this.file.inputFile.parent).toString(),
+        settings
       )
-      MdocDialect.scala(input).parse[Source] match {
-        case e: scala.meta.parsers.Parsed.Error =>
-          reporter.error(e.pos, e.message)
-        case Success(source) =>
-          source.stats.foreach {
-            case i: Import =>
-              i.importers.foreach {
-                case FilePrintable() | NonPrintable() =>
-                case _ =>
-              }
-            case _ =>
-          }
-      }
+    )
+    val fileDependencies = mutable.ListBuffer.empty[FileImport]
+    MdocDialect.scala(input).parse[Source] match {
+      case e: scala.meta.parsers.Parsed.Error =>
+        reporter.error(e.pos, e.message)
+      case Success(source) =>
+        source.stats.foreach {
+          case i: Import =>
+            i.importers.foreach {
+              case FilePrintable(dep) =>
+                fileDependencies += dep
+              case NonPrintable() =>
+              case _ =>
+            }
+          case _ =>
+        }
     }
+    fileImport.copy(
+      dependencies = fileDependencies.toList
+    )
   }
 }

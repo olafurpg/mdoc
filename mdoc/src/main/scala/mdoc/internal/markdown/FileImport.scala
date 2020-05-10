@@ -19,7 +19,8 @@ final case class FileImport(
     importName: Name.Indeterminate,
     objectName: String,
     packageName: String,
-    source: String
+    source: String,
+    dependencies: List[FileImport]
 ) {
   def toInput: Input = {
     val text = new StringBuilder()
@@ -82,7 +83,7 @@ object FileImport {
     val scriptPath = AbsolutePath(importedPath).resolveSibling(_ + ".sc")
     if (scriptPath.isFile) {
       val text = scriptPath.readText
-      Some(FileImport(scriptPath, qual, fileImport, objectName, packageName, text))
+      Some(FileImport(scriptPath, qual, fileImport, objectName, packageName, text, Nil))
     } else {
       reporter.error(fileImport.pos, s"no such file $scriptPath")
       None

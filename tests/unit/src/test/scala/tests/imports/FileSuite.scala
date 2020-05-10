@@ -141,12 +141,16 @@ class FileSuite extends BaseCliSuite {
   checkCli(
     "compile-error",
     """
-      |/hello.sc
+      |/hello1.sc
+      |val message: String = 42
+      |/hello2.sc
+      |import $file.hello1
       |val number: Int = ""
       |/readme.md
       |```scala mdoc
-      |import $file.hello
-      |println(hello.number)
+      |import $file.hello2
+      |val something: Int = ""
+      |println(hello2.number)
       |```
       |""".stripMargin,
     "",
@@ -155,8 +159,18 @@ class FileSuite extends BaseCliSuite {
     onStdout = { stdout =>
       assertNoDiff(
         stdout,
-        """|info: Compiling 2 files to <output>
-           |error: <input>/hello.sc:1:19: type mismatch;
+        """|info: Compiling 3 files to <output>
+           |error: <input>/readme.md:3:22: type mismatch;
+           | found   : String("")
+           | required: Int
+           |val something: Int = ""
+           |                     ^^
+           |error: <input>/hello1.sc:1:23: type mismatch;
+           | found   : Int(42)
+           | required: String
+           |val message: String = 42
+           |                      ^
+           |error: <input>/hello2.sc:2:19: type mismatch;
            | found   : String("")
            | required: Int
            |val number: Int = ""

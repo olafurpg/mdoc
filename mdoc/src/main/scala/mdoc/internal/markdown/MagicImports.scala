@@ -14,6 +14,7 @@ import scala.meta.parsers.Parsed.Success
 import scala.meta.Source
 import scala.meta.Import
 import mdoc.internal.pos.PositionSyntax._
+import scala.meta.inputs.Position
 
 class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
 
@@ -22,16 +23,18 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
   val repositories = mutable.ListBuffer.empty[Name.Indeterminate]
   val files = mutable.Map.empty[AbsolutePath, FileImport]
 
-  class Printable(inputFile: InputFile) {
+  class Printable(inputFile: InputFile, parents: List[FileImport]) {
     private val File = new FileImport.Matcher(settings, inputFile, reporter)
-    def unapply(importer: Importer): Option[FileImport] = importer match {
-      case File(fileImport) =>
-        Some(visitFile(fileImport))
-      case _ =>
-        None
+    def unapply(importer: Importer): Option[FileImport] = {
+      importer match {
+        case File(fileImport) =>
+          Some(visitFile(fileImport, parents))
+        case _ =>
+          None
+      }
     }
   }
-  object Printable extends Printable(file)
+  object Printable extends Printable(file, Nil)
 
   object NonPrintable {
     def unapply(importer: Importer): Boolean = importer match {
@@ -56,16 +59,35 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
     }
   }
 
-  private def visitFile(fileImport: FileImport): FileImport = {
-    files.getOrElseUpdate(fileImport.path, visitFileUncached(fileImport))
+  private def visitFile(fileImport: FileImport, parents: List[FileImport]): FileImport = {
+    if (parents.exists(_.path == fileImport.path)) {
+      val all = (parents.reverse :+ fileImport).map(_.importName.pos.toUnslicedPosition)
+      val cycle = all
+        .map(pos => s"${pos.input.filename}:${pos.startLine}")
+        .mkString(
+          s"\n -- root       --> ",
+          s"\n -- depends on --> ",
+          s"\n -- cycle      --> ${fileImport.path}"
+        )
+      reporter.error(
+        all.head,
+        s"illegal cyclic dependency. " +
+          s"To fix this problem, refactor the code so that no transitive $$file imports end " +
+          s"up depending on the original file.$cycle"
+      )
+      fileImport
+    } else {
+      files.getOrElseUpdate(fileImport.path, visitFileUncached(fileImport, parents))
+    }
   }
-  private def visitFileUncached(fileImport: FileImport): FileImport = {
+  private def visitFileUncached(fileImport: FileImport, parents: List[FileImport]): FileImport = {
     val input = Input.VirtualFile(fileImport.path.toString(), fileImport.source)
     val FilePrintable = new Printable(
       InputFile.fromRelativeFilename(
         fileImport.path.toRelative(this.file.inputFile.parent).toString(),
         settings
-      )
+      ),
+      fileImport :: parents
     )
     val fileDependencies = mutable.ListBuffer.empty[FileImport]
     MdocDialect.scala(input).parse[Source] match {

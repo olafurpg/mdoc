@@ -42,8 +42,6 @@ abstract class BaseMarkdownSuite extends tests.BaseSuite {
       )
       .withProperties(MdocProperties.default(PathIO.workingDirectory))
 
-  def postProcessObtained: Map[String, String => String] = Map.empty
-  def postProcessExpected: Map[String, String => String] = Map.empty
   private val myStdout = new ByteArrayOutputStream()
   private def newReporter(): ConsoleReporter = {
     myStdout.reset()

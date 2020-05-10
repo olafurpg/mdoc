@@ -22,18 +22,10 @@ final case class FileImport(
     source: String,
     dependencies: List[FileImport]
 ) {
+  def prefix: String =
+    s"package $packageName; object $objectName {"
   def toInput: Input = {
-    val text = new StringBuilder()
-      .append("package ")
-      .append(packageName)
-      .append("\n")
-      .append("\n")
-      .append("object ")
-      .append(objectName)
-      .append(" {\n")
-      .append(source)
-      .append("\n}\n")
-      .toString()
+    val text = s"$prefix$source\n}\n"
     Input.VirtualFile(path.syntax, text)
   }
 }

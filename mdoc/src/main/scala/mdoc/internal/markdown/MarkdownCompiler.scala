@@ -28,6 +28,7 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.io.VirtualDirectory
 import sun.misc.Unsafe
+import scala.annotation.implicitNotFound
 
 object MarkdownCompiler {
 
@@ -49,7 +50,7 @@ object MarkdownCompiler {
       reporter,
       edit,
       "repl.Session$",
-      instrumented.fileImports.map(_.toInput)
+      instrumented.fileImports
     )
     val doc = compiled match {
       case Some(cls) =>
@@ -219,14 +220,14 @@ class MarkdownCompiler(
       input: Input,
       vreporter: Reporter,
       edit: TokenEditDistance,
-      fileImports: List[Input]
+      fileImports: List[FileImport]
   ): Unit = {
     clearTarget()
     sreporter.reset()
     val g = global
     val run = new g.Run
-    run.compileSources((input :: fileImports).map(toSource))
-    report(vreporter, input, edit)
+    run.compileSources((input :: fileImports.map(_.toInput)).map(toSource))
+    report(vreporter, input, edit, fileImports)
   }
 
   def compile(
@@ -234,7 +235,7 @@ class MarkdownCompiler(
       vreporter: Reporter,
       edit: TokenEditDistance,
       className: String,
-      fileImports: List[Input],
+      fileImports: List[FileImport],
       retry: Int = 0
   ): Option[Class[_]] = {
     reset()
@@ -289,34 +290,67 @@ class MarkdownCompiler(
 
   private def nullableMessage(msgOrNull: String): String =
     if (msgOrNull == null) "" else msgOrNull
-  private def report(vreporter: Reporter, input: Input, edit: TokenEditDistance): Unit = {
+  private def report(
+      vreporter: Reporter,
+      input: Input,
+      edit: TokenEditDistance,
+      fileImports: List[FileImport]
+  ): Unit = {
     sreporter.infos.foreach {
       case sreporter.Info(pos, msgOrNull, severity) =>
         val msg = nullableMessage(msgOrNull)
-        val mpos = toMetaPosition(edit, pos)
-        val actualMessage =
-          if (mpos == Position.None) {
-            val line = pos.lineContent
-            if (line.nonEmpty) {
-              new CodeBuilder()
-                .println(s"${input.syntax}:${pos.line} (mdoc generated code) $msg")
-                .println(pos.lineContent)
-                .println(pos.lineCaret)
-                .toString
+        if (pos.source.file.name.endsWith(".sc")) {
+          val mpos = fileImports.find(_.path.toNIO.endsWith(pos.source.file.name)) match {
+            case None =>
+              Position.Range(
+                Input.VirtualFile(pos.source.file.path, pos.source.content.mkString),
+                pos.point,
+                pos.point
+              )
+            case Some(fileImport) =>
+              val point = math.max(0, pos.point - fileImport.prefix.length())
+              Position.Range(
+                Input.VirtualFile(fileImport.path.toString(), fileImport.source),
+                point,
+                point
+              )
+          }
+          reportMessage(vreporter, severity, mpos, msg)
+        } else {
+          val mpos = toMetaPosition(edit, pos)
+          val actualMessage =
+            if (mpos == Position.None) {
+              val line = pos.lineContent
+              if (line.nonEmpty) {
+                formatMessage(pos, msg)
+              } else {
+                msg
+              }
             } else {
               msg
             }
-          } else {
-            msg
-          }
-        severity match {
-          case sreporter.ERROR => vreporter.error(mpos, actualMessage)
-          case sreporter.INFO => vreporter.info(mpos, actualMessage)
-          case sreporter.WARNING => vreporter.warning(mpos, actualMessage)
-          case _ =>
+          reportMessage(vreporter, severity, mpos, actualMessage)
         }
       case _ =>
     }
   }
+
+  private def reportMessage(
+      vreporter: Reporter,
+      severity: sreporter.Severity,
+      mpos: Position,
+      message: String
+  ): Unit = severity match {
+    case sreporter.ERROR => vreporter.error(mpos, message)
+    case sreporter.INFO => vreporter.info(mpos, message)
+    case sreporter.WARNING => vreporter.warning(mpos, message)
+    case _ =>
+  }
+  private def formatMessage(pos: GPosition, message: String): String =
+    new CodeBuilder()
+      .println(s"${pos.source.file.path}:${pos.line} (mdoc generated code) $message")
+      .println(pos.lineContent)
+      .println(pos.lineCaret)
+      .toString
 
 }

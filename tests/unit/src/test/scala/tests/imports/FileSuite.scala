@@ -138,4 +138,32 @@ class FileSuite extends BaseCliSuite {
     }
   )
 
+  checkCli(
+    "compile-error",
+    """
+      |/hello.sc
+      |val number: Int = ""
+      |/readme.md
+      |```scala mdoc
+      |import $file.hello
+      |println(hello.number)
+      |```
+      |""".stripMargin,
+    "",
+    expectedExitCode = 1,
+    includeOutputPath = includeOutputPath,
+    onStdout = { stdout =>
+      assertNoDiff(
+        stdout,
+        """|info: Compiling 2 files to <output>
+           |error: <input>/hello.sc:1:19: type mismatch;
+           | found   : String("")
+           | required: Int
+           |val number: Int = ""
+           |                  ^
+           |""".stripMargin
+      )
+    }
+  )
+
 }

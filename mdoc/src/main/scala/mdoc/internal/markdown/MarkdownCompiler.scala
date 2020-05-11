@@ -226,7 +226,8 @@ class MarkdownCompiler(
     sreporter.reset()
     val g = global
     val run = new g.Run
-    run.compileSources((input :: fileImports.map(_.toInput)).map(toSource))
+    val inputs = input :: fileImports.map(_.toInput)
+    run.compileSources(inputs.map(toSource))
     report(vreporter, input, edit, fileImports)
   }
 
@@ -296,41 +297,35 @@ class MarkdownCompiler(
       edit: TokenEditDistance,
       fileImports: List[FileImport]
   ): Unit = {
-    sreporter.infos.foreach {
+    val infos = sreporter.infos.toSeq.sortBy(_.pos.source.path)
+    infos.foreach {
       case sreporter.Info(pos, msgOrNull, severity) =>
         val msg = nullableMessage(msgOrNull)
-        if (pos.source.file.name.endsWith(".sc")) {
-          val mpos = fileImports.find(_.path.toNIO.endsWith(pos.source.file.name)) match {
-            case None =>
-              Position.Range(
-                Input.VirtualFile(pos.source.file.path, pos.source.content.mkString),
-                pos.point,
-                pos.point
-              )
-            case Some(fileImport) =>
-              val point = math.max(0, pos.point - fileImport.prefix.length())
-              Position.Range(
-                Input.VirtualFile(fileImport.path.toString(), fileImport.source),
-                point,
-                point
-              )
-          }
-          reportMessage(vreporter, severity, mpos, msg)
-        } else {
-          val mpos = toMetaPosition(edit, pos)
-          val actualMessage =
-            if (mpos == Position.None) {
-              val line = pos.lineContent
-              if (line.nonEmpty) {
-                formatMessage(pos, msg)
-              } else {
-                msg
+        val actualEdit =
+          if (pos.source.file.name.endsWith(".sc")) {
+            fileImports
+              .collectFirst {
+                case fileImport if fileImport.path.toNIO.endsWith(pos.source.file.name) =>
+                  fileImport.edit
               }
+              .flatten
+              .getOrElse(edit)
+          } else {
+            edit
+          }
+        val mpos = toMetaPosition(actualEdit, pos)
+        val actualMessage =
+          if (mpos == Position.None) {
+            val line = pos.lineContent
+            if (line.nonEmpty) {
+              formatMessage(pos, msg)
             } else {
               msg
             }
-          reportMessage(vreporter, severity, mpos, actualMessage)
-        }
+          } else {
+            msg
+          }
+        reportMessage(vreporter, severity, mpos, actualMessage)
       case _ =>
     }
   }
@@ -348,7 +343,7 @@ class MarkdownCompiler(
   }
   private def formatMessage(pos: GPosition, message: String): String =
     new CodeBuilder()
-      .println(s"${pos.source.file.path}:${pos.line} (mdoc generated code) $message")
+      .println(s"${pos.source.file.path}:${pos.line + 1} (mdoc generated code) $message")
       .println(pos.lineContent)
       .println(pos.lineCaret)
       .toString

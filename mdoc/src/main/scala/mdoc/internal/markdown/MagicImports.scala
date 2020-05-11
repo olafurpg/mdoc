@@ -90,6 +90,7 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
       fileImport :: parents
     )
     val fileDependencies = mutable.ListBuffer.empty[FileImport]
+    val renames = mutable.ListBuffer.empty[Rename]
     MdocDialect.scala(input).parse[Source] match {
       case e: scala.meta.parsers.Parsed.Error =>
         reporter.error(e.pos, e.message)
@@ -97,7 +98,10 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
         source.stats.foreach {
           case i: Import =>
             i.importers.foreach {
-              case FilePrintable(dep) =>
+              case importer @ FilePrintable(dep) =>
+                if (importer.ref.syntax != dep.packageName) {
+                  renames += Rename(importer.ref.pos, dep.packageName)
+                }
                 fileDependencies += dep
               case NonPrintable() =>
               case _ =>
@@ -106,7 +110,8 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
         }
     }
     fileImport.copy(
-      dependencies = fileDependencies.toList
+      dependencies = fileDependencies.toList,
+      renames = renames.toList
     )
   }
 }

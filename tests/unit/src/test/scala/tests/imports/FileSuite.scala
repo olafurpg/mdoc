@@ -160,21 +160,85 @@ class FileSuite extends BaseCliSuite {
       assertNoDiff(
         stdout,
         """|info: Compiling 3 files to <output>
+           |error: <input>/hello1.sc:1:23: type mismatch;
+           | found   : Int(42)
+           | required: String
+           |val message: String = 42
+           |                      ^^
+           |error: <input>/hello2.sc:2:19: type mismatch;
+           | found   : String("")
+           | required: Int
+           |val number: Int = ""
+           |                  ^^
            |error: <input>/readme.md:3:22: type mismatch;
            | found   : String("")
            | required: Int
            |val something: Int = ""
            |                     ^^
-           |error: <input>/hello1.sc:1:23: type mismatch;
-           | found   : Int(42)
-           | required: String
-           |val message: String = 42
-           |                      ^
-           |error: <input>/hello2.sc:2:19: type mismatch;
-           | found   : String("")
-           | required: Int
-           |val number: Int = ""
-           |                  ^
+           |""".stripMargin
+      )
+    }
+  )
+
+  checkCli(
+    "conflicting-package",
+    """
+      |/hello0.sc
+      |val zero = 0
+      |/inner/hello1.sc
+      |val one = 1
+      |/inner/hello2.sc
+      |import $file.hello1
+      |import $file.^.hello0
+      |val two = hello1.one + 1 + hello0.zero
+      |/hello3.sc
+      |import $file.hello0
+      |import $file.inner.hello1
+      |import $file.inner.hello2
+      |val three = hello0.zero + hello1.one + hello2.two
+      |/readme.md
+      |```scala mdoc
+      |import $file.hello3
+      |println(hello3.three)
+      |```
+      |""".stripMargin,
+    """|/readme.md
+       |```scala
+       |import $file.hello3
+       |println(hello3.three)
+       |// 3
+       |```
+       |""".stripMargin,
+    includeOutputPath = includeOutputPath
+  )
+
+  checkCli(
+    "importees",
+    """
+      |/hello0.sc
+      |val zero = 0
+      |/hello1.sc
+      |val one = 1
+      |/hello2.sc
+      |val two = 2
+      |/readme.md
+      |```scala mdoc
+      |import $file.{ hello0, hello1 => h1, hello2 => _, _ }
+      |println(hello3.three)
+      |```
+      |""".stripMargin,
+    "",
+    expectedExitCode = 1,
+    includeOutputPath = includeOutputPath,
+    onStdout = { stdout =>
+      assertNoDiff(
+        stdout,
+        // NOTE(olafur): feel free to update the expected output here if implement
+        // support for repeated importee syntax. It's not a use-case I H
+        """|info: Compiling 4 files to <output>
+           |error: <input>/readme.md:2:8: unsupported syntax. To fix this problem, use regular `import $file.path` imports without curly braces.
+           |import $file.{ hello0, hello1 => h1, hello2 => _, _ }
+           |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
            |""".stripMargin
       )
     }

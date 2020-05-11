@@ -25,10 +25,10 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
 
   class Printable(inputFile: InputFile, parents: List[FileImport]) {
     private val File = new FileImport.Matcher(settings, inputFile, reporter)
-    def unapply(importer: Importer): Option[FileImport] = {
+    def unapply(importer: Importer): Option[List[FileImport]] = {
       importer match {
-        case File(fileImport) =>
-          Some(visitFile(fileImport, parents))
+        case File(fileImports) =>
+          Some(fileImports.map(i => visitFile(i, parents)))
         case _ =>
           None
       }
@@ -98,11 +98,13 @@ class MagicImports(settings: Settings, reporter: Reporter, file: InputFile) {
         source.stats.foreach {
           case i: Import =>
             i.importers.foreach {
-              case importer @ FilePrintable(dep) =>
-                if (importer.ref.syntax != dep.packageName) {
-                  renames += Rename(importer.ref.pos, dep.packageName)
+              case importer @ FilePrintable(deps) =>
+                deps.foreach { dep =>
+                  if (importer.ref.syntax != dep.packageName) {
+                    renames += Rename(importer.ref.pos, dep.packageName)
+                  }
+                  fileDependencies += dep
                 }
-                fileDependencies += dep
               case NonPrintable() =>
               case _ =>
             }

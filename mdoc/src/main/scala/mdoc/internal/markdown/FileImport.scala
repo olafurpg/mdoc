@@ -51,22 +51,11 @@ object FileImport {
       file: InputFile,
       reporter: Reporter
   ) {
-    def unapply(importer: Importer): Option[FileImport] = importer match {
+    def unapply(importer: Importer): Option[List[FileImport]] = importer match {
       case importer @ Importer(qual, importees) if isFileQualifier(qual) =>
-        importees match {
-          case List(Importee.Name(name: Name.Indeterminate)) =>
-            FileImport.fromImport(file.inputFile, qual, name, reporter, settings)
-          case _ =>
-            // NOTE(olafur): it would be nice to support this syntax but it requires
-            // some custom changes to how we instrument imports so I'm leaving it for
-            // future work. We try to report a helpful error instead.
-            reporter.error(
-              importer.pos,
-              "unsupported syntax. " +
-                s"To fix this problem, use regular `import $$file.path` imports without curly braces."
-            )
-            None
-        }
+        val parsed = FileImport.fromImportees(file.inputFile, qual, importees, reporter, settings)
+        if (parsed.forall(_.isDefined)) Some(parsed.map(_.get))
+        else None
       case _ =>
         None
     }
@@ -77,6 +66,34 @@ object FileImport {
     }
   }
 
+  private def fromImportees(
+      base: AbsolutePath,
+      qual: Term,
+      importees: List[Importee],
+      reporter: Reporter,
+      settings: Settings
+  ): List[Option[FileImport]] = {
+    importees.collect {
+      case Importee.Name(name: Name.Indeterminate) =>
+        fromImport(base, qual, name, reporter, settings)
+      case Importee.Rename(name: Name.Indeterminate, _) =>
+        fromImport(base, qual, name, reporter, settings)
+      case i @ Importee.Wildcard() =>
+        reporter.error(
+          i.pos,
+          "wildcards are not supported for $file imports. " +
+            "To fix this problem, explicitly import files using the `import $file.FILENAME` syntax."
+        )
+        None
+      case i @ Importee.Unimport(_) =>
+        reporter.error(
+          i.pos,
+          "unimports are not supported for $file imports. " +
+            "To fix this problem, remove the unimported symbol."
+        )
+        None
+    }
+  }
   private def fromImport(
       base: AbsolutePath,
       qual: Term,

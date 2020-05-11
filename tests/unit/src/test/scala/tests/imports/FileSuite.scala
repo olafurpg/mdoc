@@ -219,12 +219,40 @@ class FileSuite extends BaseCliSuite {
       |val zero = 0
       |/hello1.sc
       |val one = 1
-      |/hello2.sc
-      |val two = 2
+      |/inner/hello2.sc
+      |import $file.^.{ hello1 => h1 }
+      |val two = h1.one + 1
       |/readme.md
       |```scala mdoc
-      |import $file.{ hello0, hello1 => h1, hello2 => _, _ }
-      |println(hello3.three)
+      |import $file.{ hello0, hello1 => h1 }, $file.inner.hello2
+      |println(hello0.zero)
+      |println(h1.one)
+      |println(hello2.two)
+      |```
+      |""".stripMargin,
+    """|/readme.md
+       |```scala
+       |import $file.{ hello0, hello1 => h1 }, $file.inner.hello2
+       |println(hello0.zero)
+       |// 0
+       |println(h1.one)
+       |// 1
+       |println(hello2.two)
+       |// 2
+       |```
+       |""".stripMargin,
+    includeOutputPath = includeOutputPath
+  )
+
+  checkCli(
+    "importee-unimport",
+    """
+      |/hello0.sc
+      |val zero = 0
+      |/readme.md
+      |```scala mdoc
+      |import $file.{ hello0 => _ }
+      |println("Hello world!")
       |```
       |""".stripMargin,
     "",
@@ -233,12 +261,36 @@ class FileSuite extends BaseCliSuite {
     onStdout = { stdout =>
       assertNoDiff(
         stdout,
-        // NOTE(olafur): feel free to update the expected output here if implement
-        // support for repeated importee syntax. It's not a use-case I H
-        """|info: Compiling 4 files to <output>
-           |error: <input>/readme.md:2:8: unsupported syntax. To fix this problem, use regular `import $file.path` imports without curly braces.
-           |import $file.{ hello0, hello1 => h1, hello2 => _, _ }
-           |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        """|info: Compiling 2 files to <output>
+           |error: <input>/readme.md:2:16: unimports are not supported for $file imports. To fix this problem, remove the unimported symbol.
+           |import $file.{ hello0 => _ }
+           |               ^^^^^^^^^^^
+           |""".stripMargin
+      )
+    }
+  )
+
+  checkCli(
+    "importee-wildcard",
+    """
+      |/hello0.sc
+      |val zero = 0
+      |/readme.md
+      |```scala mdoc
+      |import $file._
+      |println(hello0.zero)
+      |```
+      |""".stripMargin,
+    "",
+    expectedExitCode = 1,
+    includeOutputPath = includeOutputPath,
+    onStdout = { stdout =>
+      assertNoDiff(
+        stdout,
+        """|info: Compiling 2 files to <output>
+           |error: <input>/readme.md:2:14: wildcards are not supported for $file imports. To fix this problem, explicitly import files using the `import $file.FILENAME` syntax.
+           |import $file._
+           |             ^
            |""".stripMargin
       )
     }

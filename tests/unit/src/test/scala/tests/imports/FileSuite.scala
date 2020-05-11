@@ -296,4 +296,38 @@ class FileSuite extends BaseCliSuite {
     }
   )
 
+  checkCli(
+    "rename-edit-distance",
+    """
+      |/hello0.sc
+      |val zero = 0
+      |/inner/hello1.sc
+      |import $file.^.hello0
+      |val one = hello0.number + 1
+      |/readme.md
+      |```scala mdoc
+      |import $file.hello0, $file.inner.hello1
+      |println(hello0.zero)
+      |println(hello1.one)
+      |```
+      |""".stripMargin,
+    "",
+    expectedExitCode = 1,
+    includeOutputPath = includeOutputPath,
+    onStdout = { stdout =>
+      // NOTE(olafur): this test stresses that the caret position of the error
+      // message points to `hello0.number` despite using package renames in the
+      // import qualifier. This works because we employ token edit distance to
+      // map positions from the instrumented source to the original source.
+      assertNoDiff(
+        stdout,
+        """|info: Compiling 3 files to <output>
+           |error: <input>/inner/hello1.sc:2:11: value number is not a member of object $file.hello0
+           |val one = hello0.number + 1
+           |          ^^^^^^^^^^^^^
+           |""".stripMargin
+      )
+    }
+  )
+
 }

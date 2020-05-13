@@ -64,8 +64,11 @@ class BloopProjects(in: Inputs) {
 
     sourceByInstrumentedScript(instrumentedScript) = i.path
     instrumentedScript.write(i.toInput.text)
-    bloop.config.write(file, in.bloopDir.resolve(directoryName + ".json").toNIO)
-
+    val jsonFile = in.bloopDir.resolve(directoryName + ".json")
+    jsonFile.write(bloop.config.write(file))
+    pprint.log(jsonFile)
+    pprint.log(jsonFile.readText)
+    Files.write(jsonFile.toNIO, jsonFile.readText.getBytes())
     file
   }
   val jsonPattern = FileSystems.getDefault().getPathMatcher("glob:**/*.json")

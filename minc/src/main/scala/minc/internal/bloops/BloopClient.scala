@@ -116,7 +116,7 @@ object BloopClient {
     val initializeResult = server
       .buildInitialize(
         new InitializeBuildParams(
-          "MDoc",
+          "MInc",
           BuildInfo.version,
           BuildInfo.bspVersion,
           workspace.toURI.toString(),

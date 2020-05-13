@@ -51,7 +51,7 @@ lazy val sharedSettings = List(
 )
 
 val V = new {
-  val bloop = "1.4.0-1-558a94e8"
+  val bloop = "1.4.0-RC1-235-3231567a"
   val bsp4j = "2.0.0-M11"
   val scalameta = "4.3.10"
   val munit = "0.7.1"
@@ -137,6 +137,7 @@ lazy val mdoc = project
 
 lazy val minc = project
   .settings(
+    fork := true,
     libraryDependencies ++= List(
       "io.github.soc" % "directories" % "11",
       "ch.epfl.scala" % "bsp4j" % "2.0.0-M11",

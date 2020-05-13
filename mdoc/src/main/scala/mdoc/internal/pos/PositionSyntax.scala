@@ -198,6 +198,10 @@ object PositionSyntax {
         text.getBytes(StandardCharsets.UTF_8)
       )
     }
+    def createDirectories: AbsolutePath = {
+      Files.createDirectories(path.toNIO)
+      path
+    }
     def toRelativeLinkFrom(other: AbsolutePath, prefix: String): String = {
       prefix + path.toRelative(other.parent).toURI(false).toString
     }

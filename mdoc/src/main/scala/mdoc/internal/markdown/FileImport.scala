@@ -129,7 +129,7 @@ object FileImport {
     val packageName = parts.init.mkString(".")
     val objectName = parts.last
     val importedPath = loop(base.toNIO.getParent(), relativePath)
-    val scriptPath = AbsolutePath(importedPath).resolveSibling(_ + ".sc")
+    val scriptPath = AbsolutePath(importedPath)(base).resolveSibling(_ + ".sc")
     if (scriptPath.isFile) {
       val text = scriptPath.readText
       Some(FileImport(scriptPath, qual, fileImport, objectName, packageName, text, Nil, Nil))

@@ -1,6 +1,12 @@
-package mdoc.internal.minc
+package minc.internal.commands
 
-final case class RunOptions()
+import java.nio.file.Path
+import metaconfig.annotation.ExtraName
+
+final case class RunOptions(
+    @ExtraName("remainingArgs")
+    scripts: List[Path] = Nil
+)
 object RunOptions {
   val default = RunOptions()
   implicit lazy val surface = metaconfig.generic.deriveSurface[RunOptions]

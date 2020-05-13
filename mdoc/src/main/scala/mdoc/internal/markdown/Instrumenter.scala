@@ -22,6 +22,7 @@ class Instrumenter(
   def instrument(): Instrumented = {
     printAsScript()
     Instrumented.fromSource(
+      file,
       out.toString,
       magic.scalacOptions.toList,
       magic.dependencies.toList,

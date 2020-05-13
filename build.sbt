@@ -135,6 +135,7 @@ lazy val mdoc = project
 lazy val minc = project
   .settings(
     libraryDependencies ++= List(
+      "io.github.soc" % "directories" % "11",
       "ch.epfl.scala" %% "bloop-config" % V.bloop,
       "ch.epfl.scala" %% "bloop-launcher" % V.bloop
     ),

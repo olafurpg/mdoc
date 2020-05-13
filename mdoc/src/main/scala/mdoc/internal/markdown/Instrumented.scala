@@ -12,8 +12,10 @@ import mdoc.Reporter
 import scala.util.Failure
 import scala.util.Success
 import coursierapi.error.CoursierError
+import mdoc.internal.cli.InputFile
 
 case class Instrumented(
+    file: InputFile,
     source: String,
     scalacOptionImports: List[Name.Indeterminate],
     dependencyImports: List[Name.Indeterminate],
@@ -26,6 +28,7 @@ case class Instrumented(
 
 object Instrumented {
   def fromSource(
+      file: InputFile,
       source: String,
       scalacOptionImports: List[Name.Indeterminate],
       dependencyImports: List[Name.Indeterminate],
@@ -52,6 +55,7 @@ object Instrumented {
         }
       } yield repo
     Instrumented(
+      file,
       source,
       scalacOptionImports,
       dependencyImports,

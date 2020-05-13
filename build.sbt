@@ -51,6 +51,7 @@ lazy val sharedSettings = List(
 )
 
 val V = new {
+  val bloop = "1.4.0-1-558a94e8"
   val scalameta = "4.3.10"
   val munit = "0.7.1"
   val coursier = "0.0.22"
@@ -130,6 +131,17 @@ lazy val mdoc = project
   )
   .dependsOn(runtime)
   .enablePlugins(BuildInfoPlugin)
+
+lazy val minc = project
+  .settings(
+    libraryDependencies ++= List(
+      "ch.epfl.scala" %% "bloop-config" % V.bloop,
+      "ch.epfl.scala" %% "bloop-launcher" % V.bloop
+    ),
+    moduleName := "minc",
+    mainClass in assembly := Some("minc.Main")
+  )
+  .dependsOn(mdoc)
 
 lazy val testsInput = project
   .in(file("tests/input"))

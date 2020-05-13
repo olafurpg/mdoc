@@ -24,7 +24,9 @@ case class Instrumented(
     positionedDependencies: List[PositionedDependency],
     dependencies: Set[Dependency],
     repositories: List[Repository]
-)
+) {
+  val scalacOptions: List[String] = scalacOptionImports.flatMap(_.value.split(" +"))
+}
 
 object Instrumented {
   def fromSource(

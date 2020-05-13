@@ -61,8 +61,7 @@ object RunCommand extends Command[RunOptions]("run") {
               val cacheDir = AbsolutePath(
                 ProjectDirectories.from("org.scalameta", "Scalameta", "minc").cacheDir
               )
-              val md5 = MD5.compute(path.toURI.toString()).take(6)
-              val outdir = cacheDir.resolve(path.filename + "-" + md5).createDirectories
+              val outdir = cacheDir.resolve(BloopProjects.directoryName(path)).createDirectories
               val reporter = new ConsoleReporter(app.out)
               val settings =
                 Settings.default(cwd).copy(in = List(path.parent), out = List(outdir))

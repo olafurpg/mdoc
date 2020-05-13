@@ -136,6 +136,7 @@ lazy val minc = project
   .settings(
     libraryDependencies ++= List(
       "io.github.soc" % "directories" % "11",
+      "ch.epfl.scala" % "bsp4j" % "2.0.0-M11",
       "ch.epfl.scala" %% "bloop-config" % V.bloop,
       "ch.epfl.scala" %% "bloop-launcher" % V.bloop
     ),

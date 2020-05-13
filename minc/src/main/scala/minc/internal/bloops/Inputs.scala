@@ -26,6 +26,7 @@ case class Inputs(
     "$file",
     instrumented.file.inputFile.readText,
     instrumented.fileImports,
-    Nil
+    Nil,
+    isMainClass = true
   )
 }

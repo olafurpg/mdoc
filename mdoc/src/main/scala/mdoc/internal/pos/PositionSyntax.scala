@@ -15,6 +15,7 @@ import scala.meta.internal.io.PathIO
 import scala.util.control.NonFatal
 import coursierapi.Dependency
 import scala.meta.internal.io.FileIO
+import java.nio.file.StandardOpenOption
 
 object PositionSyntax {
   implicit class XtensionInputMdoc(input: Input) {
@@ -195,7 +196,9 @@ object PositionSyntax {
       Files.createDirectories(path.toNIO.getParent)
       Files.write(
         path.toNIO,
-        text.getBytes(StandardCharsets.UTF_8)
+        text.getBytes(StandardCharsets.UTF_8),
+        StandardOpenOption.TRUNCATE_EXISTING,
+        StandardOpenOption.CREATE
       )
     }
     def createDirectories: AbsolutePath = {

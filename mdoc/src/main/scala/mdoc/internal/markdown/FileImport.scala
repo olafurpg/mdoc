@@ -26,11 +26,16 @@ final case class FileImport(
     packageName: String,
     source: String,
     dependencies: List[FileImport],
-    renames: List[Rename]
+    renames: List[Rename],
+    isMainClass: Boolean
 ) {
+  def mainPrefix =
+    if (isMainClass)
+      "def main(args: _root_.scala.Array[_root_.java.lang.String]): _root_.scala.Unit = {"
+    else ""
   val fullyQualifiedName = s"$packageName.$objectName"
   val prefix: String =
-    s"package $packageName; object $objectName {"
+    s"package $packageName; object $objectName {$mainPrefix"
   val toInput: Input = {
     val out = new java.lang.StringBuilder().append(prefix)
     var i = 0
@@ -42,6 +47,7 @@ final case class FileImport(
     }
     out
       .append(source, i, source.length())
+      .append(if (isMainClass) "\n}" else "")
       .append("\n}\n")
     Input.VirtualFile(path.syntax, out.toString())
   }
@@ -132,7 +138,19 @@ object FileImport {
     val scriptPath = AbsolutePath(importedPath)(base).resolveSibling(_ + ".sc")
     if (scriptPath.isFile) {
       val text = scriptPath.readText
-      Some(FileImport(scriptPath, qual, fileImport, objectName, packageName, text, Nil, Nil))
+      Some(
+        FileImport(
+          scriptPath,
+          qual,
+          fileImport,
+          objectName,
+          packageName,
+          text,
+          Nil,
+          Nil,
+          isMainClass = false
+        )
+      )
     } else {
       reporter.error(fileImport.pos, s"no such file $scriptPath")
       None

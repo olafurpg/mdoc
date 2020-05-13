@@ -109,10 +109,10 @@ object BloopProjects {
     val md5 = MD5.compute(path.toURI.toString()).take(6)
     path.filename + "-" + md5
   }
-  def create(inputs: Inputs): Int = {
+  def create(inputs: Inputs): C.Project = {
     val projects = new BloopProjects(inputs)
     val main = projects.file(inputs.main)
     projects.garbageCollectBloopJson()
-    0
+    main.project
   }
 }

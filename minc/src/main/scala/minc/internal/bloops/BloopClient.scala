@@ -46,6 +46,12 @@ import ch.epfl.scala.bsp4j.DiagnosticSeverity
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import java.io.PrintWriter
+import scala.annotation.meta.param
+import ch.epfl.scala.bsp4j.MessageType.ERROR
+import ch.epfl.scala.bsp4j.MessageType.WARNING
+import ch.epfl.scala.bsp4j.MessageType.INFORMATION
+import ch.epfl.scala.bsp4j.MessageType.LOG
+import mdoc.Reporter
 
 class BloopClient(
     val client: MdocBuildClient,
@@ -55,7 +61,8 @@ class BloopClient(
 )
 
 object BloopClient {
-  def create(target: AbsolutePath): BloopClient = {
+  def create(inputs: Inputs): BloopClient = {
+    val workspace = inputs.workspace
     val launcherInOutPipe = Pipe.open()
     val launcherIn = new QuietInputStream(
       Channels.newInputStream(launcherInOutPipe.source()),
@@ -88,14 +95,14 @@ object BloopClient {
       )
     )
     Await.result(serverStarted.future, Duration(1, TimeUnit.MINUTES))
-    val tracePath = target.resolve("bsp.trace.json")
+    val tracePath = workspace.resolve("bsp.trace.json")
     val fos = Files.newOutputStream(
       tracePath.toNIO,
       StandardOpenOption.CREATE,
       StandardOpenOption.TRUNCATE_EXISTING // don't append infinitely to existing file
     )
     val tracer = new PrintWriter(fos)
-    val localClient = new MdocBuildClient
+    val localClient = new MdocBuildClient(inputs.reporter)
     val launcher = new Launcher.Builder[BloopBuildServer]()
       .traceMessages(tracer)
       .setOutput(clientOut)
@@ -112,7 +119,7 @@ object BloopClient {
           "MDoc",
           BuildInfo.version,
           BuildInfo.bspVersion,
-          target.toURI.toString(),
+          workspace.toURI.toString(),
           new BuildClientCapabilities(ju.Collections.singletonList("scala"))
         )
       )
@@ -124,14 +131,21 @@ object BloopClient {
   }
 
   trait BloopBuildServer extends BuildServer with ScalaBuildServer
-  class MdocBuildClient extends BuildClient {
+  class MdocBuildClient(reporter: Reporter) extends BuildClient {
     val diagnostics = new ConcurrentLinkedQueue[PublishDiagnosticsParams]
     import scala.collection.JavaConverters._
     def hasDiagnosticSeverity(severity: DiagnosticSeverity): Boolean =
       diagnostics.asScala
         .exists(_.getDiagnostics().asScala.exists(_.getSeverity() == severity))
     override def onBuildShowMessage(params: ShowMessageParams): Unit = ()
-    override def onBuildLogMessage(params: LogMessageParams): Unit = ()
+    override def onBuildLogMessage(params: LogMessageParams): Unit = {
+      params.getType() match {
+        case ERROR => reporter.error(params.getMessage())
+        case WARNING => reporter.warning(params.getMessage())
+        case INFORMATION => reporter.info(params.getMessage())
+        case LOG => reporter.println(params.getMessage())
+      }
+    }
     override def onBuildTaskStart(params: TaskStartParams): Unit = ()
     override def onBuildTaskProgress(params: TaskProgressParams): Unit = ()
     override def onBuildTaskFinish(params: TaskFinishParams): Unit = ()

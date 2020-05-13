@@ -23,6 +23,11 @@ import mdoc.Reporter
 import java.nio.file.Files
 import minc.internal.bloops.Inputs
 import minc.internal.bloops.BloopProjects
+import minc.internal.bloops.BloopClient
+import ch.epfl.scala.bsp4j.RunParams
+import ch.epfl.scala.bsp4j.StatusCode.OK
+import ch.epfl.scala.bsp4j.StatusCode.ERROR
+import ch.epfl.scala.bsp4j.StatusCode.CANCELLED
 
 object RunCommand extends Command[RunOptions]("run") {
   def run(value: RunOptions, app: CliApp): Int = {
@@ -74,7 +79,37 @@ object RunCommand extends Command[RunOptions]("run") {
               val sectionInputs = List(sectionInput)
               val instrumented = Instrumenter.instrument(file, sectionInputs, settings, reporter)
               if (reporter.hasErrors) 1
-              else BloopProjects.create(Inputs(instrumented, outdir, settings, reporter, app))
+              else {
+                val inputs = Inputs(instrumented, outdir, settings, reporter, app)
+                val project =
+                  BloopProjects.create(inputs)
+                if (reporter.hasErrors) 1
+                else {
+                  val client = BloopClient.create(inputs)
+                  import scala.collection.JavaConverters._
+                  val buildTarget = client.server
+                    .workspaceBuildTargets()
+                    .get
+                    .getTargets
+                    .asScala
+                    .find(_.getDisplayName() == project.name)
+
+                  buildTarget match {
+                    case None =>
+                      reporter.error(s"no such target ${project.name}")
+                      1
+                    case Some(target) =>
+                      client.server
+                        .buildTargetRun(new RunParams(target.getId()))
+                        .get()
+                        .getStatusCode() match {
+                        case OK | CANCELLED => 0
+                        case ERROR => 1
+                      }
+                      0
+                  }
+                }
+              }
           }
         }
         0

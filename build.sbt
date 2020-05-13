@@ -52,6 +52,7 @@ lazy val sharedSettings = List(
 
 val V = new {
   val bloop = "1.4.0-1-558a94e8"
+  val bsp4j = "2.0.0-M11"
   val scalameta = "4.3.10"
   val munit = "0.7.1"
   val coursier = "0.0.22"
@@ -111,7 +112,9 @@ lazy val mdoc = project
     buildInfoKeys := Seq[BuildInfoKey](
       version,
       scalaVersion,
-      scalaBinaryVersion
+      scalaBinaryVersion,
+      "bloopVersion" -> V.bloop,
+      "bspVersion" -> V.bsp4j
     ),
     libraryDependencies ++= List(
       "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",

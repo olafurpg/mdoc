@@ -39,6 +39,7 @@ class BloopProjects(in: Inputs) {
     val dependencies = i.dependencies.map(dep => this.file(dep))
     val classesDir = fileOutputDirectory.resolve("classes").createDirectories
     val projectClasspath = dependencies.map(_.project.classesDir) ++ classpath
+    pprint.log(in.workspace)
     val instrumentedScript = in.workspace.resolve(directoryName + ".scala")
     val file = C.File(
       "1.4.0",
@@ -77,13 +78,11 @@ class BloopProjects(in: Inputs) {
   }
   val jsonPattern = FileSystems.getDefault().getPathMatcher("glob:**/*.json")
   def garbageCollectBloopJson(): Unit = {
-    pprint.log(isGeneratedJsonFile)
     FileIO.listFiles(in.bloopDir).foreach { path =>
       if (!isGeneratedJsonFile.contains(path) &&
         jsonPattern.matches(path.toNIO) &&
         !path.toNIO.endsWith("bloop.settings.json") &&
         path.isFile) {
-        pprint.log(path)
         Files.delete(path.toNIO)
       }
     }

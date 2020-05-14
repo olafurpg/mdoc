@@ -52,6 +52,7 @@ import ch.epfl.scala.bsp4j.MessageType.WARNING
 import ch.epfl.scala.bsp4j.MessageType.INFORMATION
 import ch.epfl.scala.bsp4j.MessageType.LOG
 import mdoc.Reporter
+import java.io.PrintStream
 
 class BloopClient(
     val client: MdocBuildClient,
@@ -76,10 +77,13 @@ object BloopClient {
     val clientIn = Channels.newInputStream(clientInOutPipe.source())
     val launcherOut = Channels.newOutputStream(clientInOutPipe.sink())
     val serverStarted = Promise[Unit]()
+    val devnull = new PrintStream(new OutputStream {
+      def write(b: Int): Unit = ()
+    })
     val main = new LauncherMain(
       launcherIn,
       launcherOut,
-      System.err,
+      devnull,
       StandardCharsets.UTF_8,
       Shell.default,
       userNailgunHost = None,

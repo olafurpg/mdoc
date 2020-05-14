@@ -19,7 +19,6 @@ object Main {
         TabCompleteCommand
       )
     )
-    println("Hello world!")
     System.exit(cli.run(args.toList))
   }
 }

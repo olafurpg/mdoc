@@ -94,8 +94,6 @@ object RunCommand extends Command[RunOptions]("run") {
                     .asScala
                   val buildTarget = buildTargets.find(_.getDisplayName() == project.name)
 
-                  pprint.log(inputs.workspace)
-                  pprint.log(buildTargets)
                   buildTarget match {
                     case None =>
                       reporter.error(s"no such target ${project.name}")

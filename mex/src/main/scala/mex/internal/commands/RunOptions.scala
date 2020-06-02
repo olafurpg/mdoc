@@ -1,4 +1,4 @@
-package minc.internal.commands
+package mex.internal.commands
 
 import java.nio.file.Path
 import metaconfig.annotation.ExtraName

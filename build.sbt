@@ -135,7 +135,7 @@ lazy val mdoc = project
   .dependsOn(runtime)
   .enablePlugins(BuildInfoPlugin)
 
-lazy val minc = project
+lazy val mex = project
   .settings(
     fork := true,
     libraryDependencies ++= List(
@@ -144,8 +144,8 @@ lazy val minc = project
       "ch.epfl.scala" %% "bloop-config" % V.bloop,
       "ch.epfl.scala" %% "bloop-launcher" % V.bloop
     ),
-    moduleName := "minc",
-    mainClass in assembly := Some("minc.Main")
+    moduleName := "mex",
+    mainClass := Some("mex.Main")
   )
   .dependsOn(mdoc)
 

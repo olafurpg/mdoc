@@ -1,4 +1,4 @@
-package minc.internal.bloops
+package mex.internal.bloops
 
 import bloop.config.{Config => C}
 import mdoc.internal.markdown.FileImport
@@ -8,7 +8,7 @@ import coursierapi.Dependency
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.meta.io.AbsolutePath
-import minc.internal.commands.MD5
+import mex.internal.commands.MD5
 import scala.meta.internal.io.ListFiles
 import scala.meta.internal.io.FileIO
 import java.nio.file.FileSystems

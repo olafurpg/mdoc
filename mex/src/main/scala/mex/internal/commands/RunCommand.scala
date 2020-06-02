@@ -1,4 +1,4 @@
-package minc.internal.commands
+package mex.internal.commands
 
 import metaconfig.cli.Command
 import metaconfig.cli.CliApp
@@ -21,9 +21,9 @@ import io.github.soc.directories.ProjectDirectories
 import mdoc.internal.markdown.Instrumented
 import mdoc.Reporter
 import java.nio.file.Files
-import minc.internal.bloops.Inputs
-import minc.internal.bloops.BloopProjects
-import minc.internal.bloops.BloopClient
+import mex.internal.bloops.Inputs
+import mex.internal.bloops.BloopProjects
+import mex.internal.bloops.BloopClient
 import ch.epfl.scala.bsp4j.RunParams
 import ch.epfl.scala.bsp4j.StatusCode.OK
 import ch.epfl.scala.bsp4j.StatusCode.ERROR
@@ -34,7 +34,7 @@ object RunCommand extends Command[RunOptions]("run") {
     value.scripts match {
       case Nil =>
         app.error(
-          "missing script argument. To fix this problem pass in an argument like this:\n\tminc my-app.sc"
+          "missing script argument. To fix this problem pass in an argument like this:\n\tmex my-app.sc"
         )
         1
       case userPath :: Nil =>
@@ -50,7 +50,7 @@ object RunCommand extends Command[RunOptions]("run") {
           app.error(
             s"""file does not exist '$path'. To fix this problem, create a new script in this path:
                |${tab}echo 'println("Hello world!")' > $userPath
-               |${tab}minc $userPath
+               |${tab}mex $userPath
                |""".stripMargin
           )
           1
@@ -64,7 +64,7 @@ object RunCommand extends Command[RunOptions]("run") {
               1
             case Success(source) =>
               val cacheDir = AbsolutePath(
-                ProjectDirectories.from("org.scalameta", "Scalameta", "minc").cacheDir
+                ProjectDirectories.from("", "Scalameta", "mex").cacheDir
               )
               val outdir = cacheDir.resolve(BloopProjects.directoryName(path)).createDirectories
               val reporter = new ConsoleReporter(app.out)

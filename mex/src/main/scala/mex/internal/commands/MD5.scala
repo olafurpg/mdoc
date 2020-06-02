@@ -1,4 +1,4 @@
-package minc.internal.commands
+package mex.internal.commands
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets

@@ -1,4 +1,4 @@
-package minc.internal.bloops
+package mex.internal.bloops
 
 import java.nio.channels.Pipe
 import java.nio.channels.Channels
@@ -35,8 +35,8 @@ import ch.epfl.scala.bsp4j.DidChangeBuildTarget
 import ch.epfl.scala.bsp4j.TaskFinishParams
 import ch.epfl.scala.bsp4j.TaskProgressParams
 import java.util.concurrent.ConcurrentLinkedQueue
-import minc.internal.bloops.BloopClient.MdocBuildClient
-import minc.internal.bloops.BloopClient.BloopBuildServer
+import mex.internal.bloops.BloopClient.MdocBuildClient
+import mex.internal.bloops.BloopClient.BloopBuildServer
 import ch.epfl.scala.bsp4j.InitializeBuildParams
 import scala.meta.io.AbsolutePath
 import ch.epfl.scala.bsp4j.BuildClientCapabilities

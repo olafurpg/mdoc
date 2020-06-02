@@ -1,4 +1,4 @@
-package minc.internal.bloops
+package mex.internal.bloops
 
 import mdoc.internal.markdown.Instrumented
 import metaconfig.cli.CliApp
